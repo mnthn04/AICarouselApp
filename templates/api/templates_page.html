@@ -1,0 +1,123 @@
+{% extends 'api/base.html' %}
+{% load static %}
+
+{% block title %}Templates - Carousel Forge{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <i class="fas fa-palette" aria-hidden="true"></i>
+                <span>Carousel Forge</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'index' %}" class="nav-item">
+                <i class="fas fa-magic" aria-hidden="true"></i>
+                <span>Generator</span>
+            </a>
+            <a href="{% url 'templates' %}" class="nav-item active" aria-current="page">
+                <i class="fas fa-th-large" aria-hidden="true"></i>
+                <span>Templates</span>
+            </a>
+            <a href="{% url 'recent' %}" class="nav-item">
+                <i class="fas fa-history" aria-hidden="true"></i>
+                <span>Recent</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="upgrade-box">
+                <div class="upgrade-icon">
+                    <i class="fas fa-crown" aria-hidden="true"></i>
+                </div>
+                <h4>Pro Features</h4>
+                <p>Unlock unlimited generations & premium templates</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" role="main">
+        <div class="content-panel">
+            <div class="panel-header">
+                <h1><i class="fas fa-th-large"></i> Ready-made Templates</h1>
+                <p>Start with a professionally designed template</p>
+            </div>
+
+            <div class="templates-grid">
+                <div class="template-card">
+                    <div class="template-preview"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    <div class="template-info">
+                        <h4>Modern Minimal</h4>
+                        <div class="template-meta">
+                            <span class="badge">Instagram</span>
+                            <button class="btn-icon"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="template-card">
+                    <div class="template-preview"
+                        style="background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);"></div>
+                    <div class="template-info">
+                        <h4>Corporate Pro</h4>
+                        <div class="template-meta">
+                            <span class="badge">LinkedIn</span>
+                            <button class="btn-icon"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="template-card">
+                    <div class="template-preview"
+                        style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);"></div>
+                    <div class="template-info">
+                        <h4>Creative Bold</h4>
+                        <div class="template-meta">
+                            <span class="badge">Instagram</span>
+                            <button class="btn-icon"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <!-- More mock templates to fill grid -->
+                <div class="template-card">
+                    <div class="template-preview"
+                        style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);"></div>
+                    <div class="template-info">
+                        <h4>Vibrant Pop</h4>
+                        <div class="template-meta">
+                            <span class="badge">Instagram</span>
+                            <button class="btn-icon"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="template-card">
+                    <div class="template-preview"
+                        style="background: linear-gradient(135deg, #13547a 0%, #80d0c7 100%);"></div>
+                    <div class="template-info">
+                        <h4>Aqua Fresh</h4>
+                        <div class="template-meta">
+                            <span class="badge">Twitter</span>
+                            <button class="btn-icon"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="template-card">
+                    <div class="template-preview"
+                        style="background: linear-gradient(135deg, #5f2c82 0%, #49a09d 100%);"></div>
+                    <div class="template-info">
+                        <h4>Deep Ocean</h4>
+                        <div class="template-meta">
+                            <span class="badge">Presentation</span>
+                            <button class="btn-icon"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

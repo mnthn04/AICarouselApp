@@ -1,0 +1,3731 @@
+{% extends 'api/base.html' %}
+{% load static %}
+
+{% block title %}Carousel Editor - Customize Your Slides{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/editor.css' %}">
+<style>
+    /* Additional styles for image handling */
+    .slide-item-preview-img {
+        width: 100%;
+        height: 60px;
+        background-size: cover;
+        background-position: center;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .image-preview {
+        width: 100%;
+        height: 120px;
+        background: var(--light);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+        border: 2px solid var(--light-gray);
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .canvas-container {
+        position: relative;
+        background: #f5f5f5;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        min-height: 500px;
+    }
+
+    #konvaContainer {
+        width: 100%;
+        height: 100%;
+        background: white;
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+    }
+
+    .loading-content {
+        text-align: center;
+        max-width: 400px;
+        padding: 2.5rem;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid var(--light-gray);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 2rem;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    /* ========== EDITOR LAYOUT ========== */
+    .editor-container {
+        display: grid;
+        grid-template-columns: 320px 1fr 360px;
+        min-height: calc(100vh - 80px);
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        font-family: var(--font-family-primary);
+        gap: var(--spacing-lg);
+        padding: var(--spacing-lg);
+    }
+
+    /* ========== LEFT SIDEBAR ========== */
+    .editor-sidebar {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: var(--spacing-xl);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all var(--transition-normal);
+    }
+
+    .editor-sidebar:hover {
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .editor-sidebar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .editor-sidebar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+    }
+
+    .editor-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        transition: background var(--transition-fast);
+    }
+
+    .editor-sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 2px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .sidebar-header h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .sidebar-header h3 i {
+        color: var(--primary);
+    }
+
+    .slides-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-xl);
+        flex: 1;
+    }
+
+    .slide-item {
+        padding: var(--spacing-lg);
+        background: var(--light);
+        border-radius: var(--border-radius-lg);
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .slide-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+    }
+
+    .slide-item:hover::before {
+        opacity: 1;
+    }
+
+    .slide-item:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .slide-item.active {
+        border-color: var(--primary);
+        background: var(--primary-light);
+        box-shadow: var(--shadow-glow);
+    }
+
+    .slide-item.active::before {
+        opacity: 1;
+    }
+
+    .slide-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .slide-item-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .delete-slide-btn {
+        background: none;
+        border: none;
+        color: var(--gray-400);
+        cursor: pointer;
+        padding: var(--spacing-xs);
+        border-radius: var(--border-radius-sm);
+        transition: all var(--transition-fast);
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+
+    .delete-slide-btn:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--error);
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .slide-item-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--dark);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+
+    .slide-item-preview {
+        width: 100%;
+        height: 80px;
+        background: var(--gray-100);
+        border-radius: var(--border-radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-400);
+        font-size: 0.75rem;
+        text-align: center;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .slide-item-preview-img {
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        border-radius: var(--border-radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        position: relative;
+    }
+
+    .slide-item-preview-img::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%);
+        border-radius: var(--border-radius-md);
+    }
+
+    /* ========== DESIGN TOOLS ========== */
+    .sidebar-section {
+        margin-bottom: var(--spacing-xl);
+        padding: var(--spacing-lg);
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(5px);
+        border-radius: var(--border-radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        transition: all var(--transition-normal);
+    }
+
+    .sidebar-section:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .sidebar-section h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .sidebar-section h4 i {
+        color: var(--primary);
+        opacity: 0.8;
+    }
+
+    .design-tools {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .tool-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .tool-group label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-700);
+    }
+
+    .tool-group input[type="color"] {
+        width: 60px;
+        height: 40px;
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+    }
+
+    .tool-group input[type="color"]:hover {
+        border-color: var(--primary);
+        transform: scale(1.05);
+    }
+
+    .tool-group select {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        font-size: 0.875rem;
+        background: var(--light);
+        color: var(--dark);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        font-family: var(--font-family-primary);
+    }
+
+    .tool-group select:hover {
+        border-color: var(--primary);
+    }
+
+    .tool-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    /* ========== IMAGE GENERATOR ========== */
+    .image-generator {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .image-generator textarea {
+        padding: var(--spacing-md);
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        font-family: var(--font-family-primary);
+        font-size: 0.875rem;
+        color: var(--dark);
+        resize: vertical;
+        min-height: 80px;
+        transition: all var(--transition-normal);
+        background: var(--light);
+        line-height: 1.5;
+    }
+
+    .image-generator textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .image-generator textarea::placeholder {
+        color: var(--gray-400);
+        font-style: italic;
+    }
+
+    .generate-image-btn {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+        color: white;
+        border: none;
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-radius: var(--border-radius-md);
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        box-shadow: var(--shadow-md);
+    }
+
+    .generate-image-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .generate-image-btn:active {
+        transform: translateY(0);
+    }
+
+    .form-hint {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        font-style: italic;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .form-hint i {
+        color: var(--accent);
+    }
+
+    .image-preview {
+        width: 100%;
+        height: 120px;
+        background: var(--gray-100);
+        border-radius: var(--border-radius-md);
+        overflow: hidden;
+        border: 2px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--transition-normal);
+    }
+
+    .image-preview:hover {
+        border-color: var(--primary);
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .empty-preview {
+        color: var(--gray-400);
+        text-align: center;
+        font-size: 0.875rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .empty-preview i {
+        font-size: 1.5rem;
+        opacity: 0.6;
+
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+    }
+
+    /* ========== TEXT CONTROLS ========== */
+    .text-controls-section {
+        margin-bottom: var(--spacing-xl);
+        padding: var(--spacing-lg);
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(5px);
+        border-radius: var(--border-radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        transition: all var(--transition-normal);
+    }
+
+    .text-controls-section:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .text-controls-section h4 {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--dark);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .text-controls-section h4 i {
+        color: var(--primary);
+        opacity: 0.8;
+    }
+
+    .control-group {
+        margin-bottom: var(--spacing-lg);
+        padding: var(--spacing-md);
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(5px);
+        border-radius: var(--border-radius-md);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        transition: all var(--transition-normal);
+    }
+
+    .control-group:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .control-group h5 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: var(--spacing-md);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .control-group h5 i {
+        color: var(--primary);
+        font-size: 0.8rem;
+    }
+
+    .control-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .control-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .control-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .control-item label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--gray-700);
+    }
+
+    .control-item input[type="color"] {
+        width: 50px;
+        height: 40px;
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+    }
+
+    .control-item input[type="color"]:hover {
+        border-color: var(--primary);
+        transform: scale(1.05);
+    }
+
+    .control-item input[type="range"] {
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--gray-200);
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+    }
+
+    .control-item input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--primary);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .control-item input[type="range"]::-webkit-slider-thumb:hover {
+        background: var(--primary-hover);
+        transform: scale(1.1);
+        box-shadow: var(--shadow-md);
+    }
+
+    .control-item select {
+        padding: var(--spacing-sm) var(--spacing-md);
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        font-size: 0.8rem;
+        background: var(--light);
+        color: var(--dark);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        font-family: var(--font-family-primary);
+    }
+
+    .control-item select:hover {
+        border-color: var(--primary);
+    }
+
+    .control-item select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .alignment-buttons {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+
+    .alignment-btn {
+        flex: 1;
+        padding: var(--spacing-sm);
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        background: var(--light);
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .alignment-btn:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .alignment-btn.active {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .weight-buttons {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+
+    .weight-btn {
+        flex: 1;
+        padding: var(--spacing-sm);
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        background: var(--light);
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .weight-btn:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .weight-btn.active {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .transform-buttons {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+
+    .transform-btn {
+        flex: 1;
+        padding: var(--spacing-sm);
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        background: var(--light);
+        color: var(--gray-600);
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: capitalize;
+    }
+
+    .transform-btn:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .transform-btn.active {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .slide-item-preview {
+        height: 60px;
+        background: white;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: var(--gray);
+        overflow: hidden;
+    }
+
+    .sidebar-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--light-gray);
+    }
+
+    .sidebar-section h4 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray);
+    }
+
+    .design-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .tool-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .tool-group label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .tool-group input[type="color"] {
+        width: 100%;
+        height: 40px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .tool-group select {
+        padding: 0.5rem;
+        border: 1px solid var(--light-gray);
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+
+    .image-generator {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    #imagePrompt {
+        width: 100%;
+        min-height: 80px;
+        padding: 0.75rem;
+        border: 1px solid var(--light-gray);
+        border-radius: 8px;
+        resize: vertical;
+        font-size: 0.875rem;
+    }
+
+    .image-preview {
+        width: 100%;
+        height: 120px;
+        background: var(--light);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* ========== SIDEBAR ACTIONS ========== */
+    .sidebar-actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+        margin-top: auto;
+        padding-top: var(--spacing-xl);
+        border-top: 2px solid var(--gray-200);
+    }
+
+    /* ========== MAIN EDITOR CANVAS ========== */
+    .editor-main {
+        display: flex;
+        flex-direction: column;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all var(--transition-normal);
+    }
+
+    .editor-main:hover {
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .editor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-lg) var(--spacing-xl);
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        position: relative;
+    }
+
+    .editor-header::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--primary), var(--accent), transparent);
+        opacity: 0.6;
+    }
+
+    .editor-nav {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-lg);
+    }
+
+    .editor-nav span {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .editor-nav span i {
+        color: var(--primary);
+    }
+
+    .editor-tools {
+        display: flex;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+    }
+
+    .editor-tools button {
+        background: var(--light);
+        border: 2px solid var(--gray-200);
+        color: var(--gray-600);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--border-radius-md);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .editor-tools button:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-light);
+        transform: translateY(-1px);
+    }
+
+    .editor-tools button:active {
+        transform: translateY(0);
+    }
+
+    .canvas-container {
+        flex: 1;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 0;
+        overflow: hidden;
+        position: relative;
+        min-height: 600px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.03);
+    }
+
+    #konvaContainer {
+        width: 100%;
+        height: 100%;
+        background: white;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
+        border-radius: var(--border-radius-md);
+        margin: var(--spacing-md);
+    }
+
+    .empty-state {
+        text-align: center;
+        color: var(--gray-400);
+        max-width: 400px;
+        padding: var(--spacing-2xl);
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: var(--spacing-lg);
+        opacity: 0.6;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .empty-state p {
+        font-size: 1rem;
+        color: var(--gray-500);
+        line-height: 1.6;
+    }
+
+    /* ========== RIGHT PROPERTIES PANEL ========== */
+    .editor-properties {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: var(--border-radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: var(--spacing-xl);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all var(--transition-normal);
+    }
+
+    .editor-properties:hover {
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .editor-properties::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .editor-properties::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+    }
+
+    .editor-properties::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        transition: background var(--transition-fast);
+    }
+
+    .editor-properties::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .properties-header {
+        margin-bottom: var(--spacing-xl);
+        padding-bottom: var(--spacing-lg);
+        border-bottom: 2px solid rgba(99, 102, 241, 0.1);
+    }
+
+    .properties-header h4 {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--dark);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .properties-header h4 i {
+        color: var(--primary);
+        opacity: 0.8;
+    }
+
+    .properties-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xl);
+    }
+
+    .properties-section {
+        padding: var(--spacing-lg);
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(5px);
+        border-radius: var(--border-radius-lg);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        transition: all var(--transition-normal);
+    }
+
+    .properties-section:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .properties-section h5 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .properties-section h5 i {
+        color: var(--primary);
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+
+    .form-group {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-700);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: var(--spacing-md);
+        border: 2px solid var(--gray-300);
+        border-radius: var(--border-radius-md);
+        font-size: 0.875rem;
+        background: var(--light);
+        color: var(--dark);
+        transition: all var(--transition-normal);
+        font-family: var(--font-family-primary);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .form-control::placeholder {
+        color: var(--gray-400);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-radius: var(--border-radius-md);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all var(--transition-normal);
+        border: none;
+        font-family: var(--font-family-primary);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
+        box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+        background: linear-gradient(135deg, var(--primary-hover) 0%, var(--secondary-hover) 100%);
+    }
+
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        color: var(--dark);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.95);
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--success) 0%, var(--success-hover) 100%);
+        color: white;
+        box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, var(--warning) 0%, var(--warning-hover) 100%);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+
+        color: var(--dark);
+    }
+
+    .properties-content {
+        flex: 1;
+    }
+
+    .properties-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--light-gray);
+    }
+
+    .properties-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .properties-section h5 {
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray);
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--light-gray);
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-hint {
+        font-size: 0.75rem;
+        color: var(--gray);
+        margin-top: 0.25rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: var(--light);
+        color: var(--dark);
+        border: 1px solid var(--light-gray);
+    }
+
+    .btn-secondary:hover {
+        background: var(--light-gray);
+    }
+
+    .btn-success {
+        background: var(--success);
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #059669;
+    }
+
+    .btn-warning {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: #d97706;
+    }
+
+    /* Result Page */
+    .result-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .result-header {
+        text-align: center;
+        padding: 3rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 2rem;
+    }
+
+    .result-header.success {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+        color: var(--success);
+    }
+
+    .result-header i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .result-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 3rem;
+        flex-wrap: wrap;
+    }
+
+    .slides-preview {
+        margin-bottom: 3rem;
+    }
+
+    .slides-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .slide-card {
+        background: var(--light);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+    }
+
+    .slide-number {
+        padding: 0.75rem;
+        background: var(--primary);
+        color: white;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .slide-preview {
+        padding: 1.5rem;
+        min-height: 200px;
+    }
+
+    .slide-preview h3 {
+        margin-bottom: 0.75rem;
+        font-size: 1.125rem;
+    }
+
+    .slide-preview p {
+        color: var(--gray);
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    .slide-actions {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid var(--light-gray);
+    }
+
+    .result-tips {
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        border-radius: var(--border-radius);
+    }
+
+    .tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .tip {
+        text-align: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .tip i {
+        font-size: 2rem;
+        color: var(--primary);
+        margin-bottom: 1rem;
+    }
+
+    /* Toastr Customization */
+    .toast-success {
+        background-color: var(--success) !important;
+        background-repeat: no-repeat !important;
+        background-position: 15px center !important;
+    }
+
+    .toast-error {
+        background-color: var(--error) !important;
+        background-repeat: no-repeat !important;
+        background-position: 15px center !important;
+    }
+
+    /* Responsive Editor */
+    @media (max-width: 1024px) {
+        .editor-container {
+            grid-template-columns: 1fr;
+        }
+
+        .editor-sidebar {
+            border-right: none;
+            border-bottom: 1px solid var(--light-gray);
+        }
+    }
+
+    /* Error message */
+    .error-message {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 500px;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .error-content {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    /* ========== RESPONSIVE DESIGN ========== */
+    @media (max-width: 1200px) {
+        .editor-container {
+            grid-template-columns: 280px 1fr 320px;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .editor-container {
+            grid-template-columns: 260px 1fr 300px;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+        }
+
+        .sidebar-section,
+        .properties-section,
+        .text-controls-section {
+            padding: var(--spacing-md);
+        }
+
+        .control-row {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-sm);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .editor-container {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr auto;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+        }
+
+        .editor-sidebar,
+        .editor-properties {
+            display: none;
+        }
+
+        .editor-main {
+            grid-row: 2;
+            margin: 0;
+        }
+
+        .editor-header {
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+
+        .editor-nav {
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            align-items: stretch;
+        }
+
+        .editor-nav span {
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .editor-tools {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .canvas-container {
+            min-height: 400px;
+        }
+
+        #konvaContainer {
+            margin: var(--spacing-sm);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .editor-container {
+            padding: var(--spacing-sm);
+            gap: var(--spacing-sm);
+        }
+
+        .editor-header {
+            padding: var(--spacing-sm) var(--spacing-md);
+            flex-direction: column;
+            gap: var(--spacing-md);
+            align-items: stretch;
+        }
+
+        .editor-nav {
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .editor-tools {
+            justify-content: center;
+            gap: var(--spacing-xs);
+        }
+
+        .editor-tools button {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            font-size: 0.75rem;
+        }
+
+        .canvas-container {
+            min-height: 300px;
+        }
+
+        .empty-state {
+            padding: var(--spacing-lg);
+            max-width: 300px;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.25rem;
+        }
+    }
+
+    .error-content i {
+        font-size: 4rem;
+        color: var(--warning);
+        margin-bottom: 1.5rem;
+    }
+
+    .error-content h2 {
+        color: var(--dark);
+        margin-bottom: 1.5rem;
+    }
+
+    /* Canvas container adjustments */
+    .canvas-container {
+        position: relative;
+        background: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        min-height: 500px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="editor-container">
+    {% if error %}
+    <div class="error-message">
+        <div class="error-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h2>{{ error }}</h2>
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-home"></i> Go to Homepage
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <!-- Sidebar -->
+    <div class="editor-sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-layer-group"></i> Slides</h3>
+            <button id="addSlide" class="btn btn-secondary">
+                <i class="fas fa-plus"></i> Add
+            </button>
+        </div>
+
+        <div class="slides-list" id="slidesList">
+            <!-- Slides will be loaded dynamically -->
+            <div class="loading-slides">
+                <div class="loading-spinner small"></div>
+                <p>Loading slides...</p>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h4><i class="fas fa-paint-brush"></i> Design Tools</h4>
+            <div class="design-tools">
+                <div class="tool-group">
+                    <label>Background</label>
+                    <input type="color" id="bgColor" value="#FFFFFF">
+                </div>
+                <div class="tool-group">
+                    <label>Font Color</label>
+                    <input type="color" id="fontColor" value="#000000">
+                </div>
+                <div class="tool-group">
+                    <label>Font Family</label>
+                    <select id="fontFamily">
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Poppins" selected>Poppins</option>
+                        <option value="Inter">Inter</option>
+                        <option value="Montserrat">Montserrat</option>
+                    </select>
+                </div>
+                <div class="tool-group">
+                    <label>Layout</label>
+                    <select id="layout">
+                        <option value="centered" selected>Centered</option>
+                        <option value="left">Left Aligned</option>
+                        <option value="split">Split Screen</option>
+                        <option value="top">Top Aligned</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h4><i class="fas fa-image"></i> Generate Image</h4>
+            <div class="image-generator">
+                <textarea id="imagePrompt"
+                    placeholder="Describe the background image you want to generate..."></textarea>
+                <button id="generateImageBtn" class="btn btn-secondary">
+                    <i class="fas fa-magic"></i> Generate & Apply
+                </button>
+                <div class="form-hint">Image will be applied to current slide</div>
+                <div id="imagePreview" class="image-preview">
+                    <div class="empty-preview">
+                        <i class="fas fa-image"></i>
+                        <p>Generated image will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-actions">
+            <button id="saveDesign" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Slide
+            </button>
+            <button id="saveAllDesigns" class="btn btn-secondary">
+                <i class="fas fa-save"></i> Save All
+            </button>
+            <button id="exportBtn" class="btn btn-success">
+                <i class="fas fa-download"></i> Export All
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Editor - Center Canvas -->
+    <div class="editor-main">
+        <div class="editor-header">
+            <div class="editor-nav">
+                <button id="prevSlide" class="btn btn-sm">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <span id="currentSlide">Slide <span id="currentSlideNumber">1</span> of <span
+                        id="totalSlides">0</span></span>
+                <button id="nextSlide" class="btn btn-sm">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="editor-tools">
+                <button id="undo" class="btn btn-sm" title="Undo">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button id="redo" class="btn btn-sm" title="Redo">
+                    <i class="fas fa-redo"></i>
+                </button>
+
+                <button id="fullscreen" class="btn btn-sm" title="Fullscreen">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div id="konvaContainer"></div>
+            <div id="emptyState" class="empty-state">
+                <i class="fas fa-layer-group"></i>
+                <h3>No Slides Loaded</h3>
+                <p>Generate a carousel first or load existing slides</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Properties Panel -->
+    <div class="editor-properties">
+        <div class="properties-header">
+            <h4><i class="fas fa-edit"></i> Edit Content</h4>
+        </div>
+
+        <div class="properties-content">
+            <div class="properties-section">
+                <h5>Slide Details</h5>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="slideTitle" placeholder="Slide title" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="slideDescription" placeholder="Slide description" rows="3"
+                        class="form-control"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Extra Text</label>
+                    <textarea id="slideExtraText" placeholder="Additional custom text (optional)" rows="2"
+                        class="form-control"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Image Prompt</label>
+                    <textarea id="slideImagePrompt" placeholder="Describe the background image" rows="2"
+                        class="form-control"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Generated Image URL</label>
+                    <input type="text" id="generatedImageUrl" placeholder="No image generated yet" class="form-control"
+                        readonly>
+                    <div class="form-hint">This will be updated when you generate an image</div>
+                </div>
+                <button id="updateContent" class="btn btn-primary">
+                    <i class="fas fa-sync"></i> Update Slide
+                </button>
+                <button id="regenerateSlide" class="btn btn-warning">
+                    <i class="fas fa-robot"></i> Regenerate with AI
+                </button>
+            </div>
+
+            <div class="properties-section">
+                <h5>Canvas Settings</h5>
+                <div class="form-group">
+                    <label>Width (px)</label>
+                    <input type="number" id="canvasWidth" placeholder="1080" class="form-control" min="100" max="4000">
+                </div>
+                <div class="form-group">
+                    <label>Height (px)</label>
+                    <input type="number" id="canvasHeight" placeholder="1080" class="form-control" min="100" max="4000">
+                </div>
+                <button id="updateCanvasSize" class="btn btn-secondary">
+                    <i class="fas fa-expand"></i> Update Canvas
+                </button>
+            </div>
+
+            <!-- Text Controls Section -->
+            <div class="text-controls-section">
+                <h4><i class="fas fa-font"></i> Text Controls</h4>
+
+                <!-- Title Controls -->
+                <div class="control-group">
+                    <h5><i class="fas fa-heading"></i> Title Controls</h5>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Title Color</label>
+                            <input type="color" id="titleColor" value="#000000">
+                        </div>
+                        <div class="control-item">
+                            <label>Title Font Size</label>
+                            <input type="range" id="titleFontSize" min="16" max="72" value="32" step="2">
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Title Font Family</label>
+                            <select id="titleFontFamily">
+                                <option value="Arial">Arial</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Poppins" selected>Poppins</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label>Title Font Weight</label>
+                            <div class="weight-buttons">
+                                <button type="button" class="title-weight-btn" data-weight="normal">Normal</button>
+                                <button type="button" class="title-weight-btn active" data-weight="bold">Bold</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label>Title Alignment</label>
+                        <div class="alignment-buttons">
+                            <button type="button" class="title-alignment-btn" data-align="left">
+                                <i class="fas fa-align-left"></i>
+                            </button>
+                            <button type="button" class="title-alignment-btn active" data-align="center">
+                                <i class="fas fa-align-center"></i>
+                            </button>
+                            <button type="button" class="title-alignment-btn" data-align="right">
+                                <i class="fas fa-align-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description Controls -->
+                <div class="control-group">
+                    <h5><i class="fas fa-paragraph"></i> Description Controls</h5>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Description Color</label>
+                            <input type="color" id="descriptionColor" value="#333333">
+                        </div>
+                        <div class="control-item">
+                            <label>Description Font Size</label>
+                            <input type="range" id="descriptionFontSize" min="12" max="48" value="18" step="1">
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Description Font Family</label>
+                            <select id="descriptionFontFamily">
+                                <option value="Arial">Arial</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Poppins" selected>Poppins</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label>Description Font Weight</label>
+                            <div class="weight-buttons">
+                                <button type="button" class="description-weight-btn active"
+                                    data-weight="normal">Normal</button>
+                                <button type="button" class="description-weight-btn" data-weight="bold">Bold</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label>Description Alignment</label>
+                        <div class="alignment-buttons">
+                            <button type="button" class="description-alignment-btn" data-align="left">
+                                <i class="fas fa-align-left"></i>
+                            </button>
+                            <button type="button" class="description-alignment-btn active" data-align="center">
+                                <i class="fas fa-align-center"></i>
+                            </button>
+                            <button type="button" class="description-alignment-btn" data-align="right">
+                                <i class="fas fa-align-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- General Text Controls -->
+                <div class="control-group">
+                    <h5><i class="fas fa-sliders-h"></i> General Text Controls</h5>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Line Height</label>
+                            <input type="range" id="lineHeight" min="0.8" max="2.0" value="1.2" step="0.1">
+                        </div>
+                        <div class="control-item">
+                            <label>Letter Spacing</label>
+                            <input type="range" id="letterSpacing" min="-2" max="10" value="0" step="0.5">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label>Text Transform</label>
+                        <div class="transform-buttons">
+                            <button type="button" class="transform-btn active" data-transform="none">None</button>
+                            <button type="button" class="transform-btn" data-transform="uppercase">Uppercase</button>
+                            <button type="button" class="transform-btn" data-transform="lowercase">Lowercase</button>
+                            <button type="button" class="transform-btn" data-transform="capitalize">Capitalize</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="properties-section">
+                <h5>Platform Templates</h5>
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="platformSelect" class="form-control">
+                        <option value="instagram">Instagram</option>
+                        <option value="linkedin">LinkedIn</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Format</label>
+                    <select id="formatSelect" class="form-control">
+                        <option value="square">Square (1:1)</option>
+                        <option value="portrait">Portrait (4:5)</option>
+                        <option value="story">Story (9:16)</option>
+                        <option value="landscape">Landscape (1.91:1)</option>
+                    </select>
+                </div>
+                <button id="applyTemplate" class="btn btn-secondary">
+                    <i class="fas fa-magic"></i> Apply Template
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Loading overlay -->
+<div id="editorLoading" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <h3>Loading Editor</h3>
+        <p>Preparing your carousel for editing...</p>
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token -->
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/konva@8/konva.min.js"></script>
+<script>
+    // CSRF Token helper
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    class CarouselEditor {
+        constructor(projectId) {
+            this.stage = null;
+            this.layer = null;
+            this.currentSlide = 0;
+            this.slides = [];
+            this.projectId = projectId;
+            this.isLoading = true;
+            this.undoStack = [];
+            this.redoStack = [];
+            this.scale = 1;
+            this.autoSaveTimeout = null;
+            this.isInitialized = false;
+
+            // Don't call init() here
+        }
+
+        async initialize() {
+            await this.init();
+            this.isInitialized = true;
+            return this;
+        }
+
+        async init() {
+            this.showLoading();
+
+            try {
+                // Load slides from backend
+                await this.loadSlidesFromBackend();
+
+                if (this.slides.length > 0) {
+                    // Initialize Konva
+                    await this.initKonva();
+
+                    // Setup event listeners
+                    this.setupEventListeners();
+
+                    // Render first slide
+                    this.renderSlide(0);
+                    this.renderSlidesList();
+
+                    console.log('✅ Editor initialized with', this.slides.length, 'slides');
+                } else {
+                    this.showEmptyState();
+                    console.warn('No slides found for project', this.projectId);
+                }
+            } catch (error) {
+                console.error('Editor initialization error:', error);
+                toastr.error('Failed to initialize editor: ' + error.message);
+            } finally {
+                this.hideLoading();
+            }
+        }
+
+        showLoading() {
+            document.getElementById('editorLoading').style.display = 'flex';
+        }
+
+        hideLoading() {
+            document.getElementById('editorLoading').style.display = 'none';
+        }
+
+        showEmptyState() {
+            document.getElementById('emptyState').style.display = 'flex';
+            document.getElementById('currentSlide').textContent = 'No slides available';
+        }
+
+        hideEmptyState() {
+            document.getElementById('emptyState').style.display = 'none';
+        }
+
+        async loadSlidesFromBackend() {
+            try {
+                console.log('Loading slides for project:', this.projectId);
+                const response = await fetch(`/api/project/${this.projectId}/slides/`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                if (data.success && data.slides && Array.isArray(data.slides)) {
+                    this.slides = data.slides;
+                    this.project = data.project; // Store project data
+                    document.getElementById('totalSlides').textContent = this.slides.length;
+
+                    // Log each slide for debugging
+                    this.slides.forEach((slide, index) => {
+                        console.log(`Slide ${index + 1}:`, {
+                            id: slide.id,
+                            title: slide.title,
+                            hasImage: !!slide.generated_image,
+                            bgColor: slide.background_color,
+                            fontColor: slide.font_color
+                        });
+                    });
+                } else {
+                    throw new Error(data.error || 'Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error loading slides:', error);
+                toastr.error('Failed to load slides: ' + error.message);
+                throw error;
+            }
+        }
+
+        renderSlidesList() {
+            console.log('🔄 renderSlidesList called. Total slides:', this.slides.length);
+            const slidesList = document.getElementById('slidesList');
+            slidesList.innerHTML = '';
+
+            const editor = this; // Store reference to editor instance
+
+            this.slides.forEach((slide, index) => {
+                console.log('📄 Creating slide item for index:', index, 'Slide:', slide);
+                const slideItem = document.createElement('div');
+                slideItem.className = `slide-item ${index === this.currentSlide ? 'active' : ''}`;
+                slideItem.dataset.index = index;
+
+                // Create background style
+                let backgroundStyle = `background-color: ${slide.background_color || '#FFFFFF'};`;
+
+                // If slide has generated image, use it as background
+                if (slide.generated_image) {
+                    const imageUrl = `/media/${slide.generated_image}`;
+                    backgroundStyle = `background-image: url('${imageUrl}'); background-size: cover; background-position: center;`;
+                }
+
+                slideItem.innerHTML = `
+                <div class="slide-item-header">
+                    <div class="slide-item-title" title="${slide.title || 'Slide ' + (index + 1)}">
+                        ${slide.title ? slide.title.substring(0, 20) : 'Slide ' + (index + 1)}
+                        ${slide.title && slide.title.length > 20 ? '...' : ''}
+                    </div>
+                    <div class="slide-item-actions">
+                        <button class="delete-slide-btn" data-slide-id="${slide.id}" title="Delete slide">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <span class="slide-number">${index + 1}</span>
+                    </div>
+                </div>
+                <div class="slide-item-preview" style="${backgroundStyle}; color: ${slide.font_color || '#000000'};">
+                    ${slide.generated_image ? '<i class="fas fa-image"></i>' : ''}
+                    ${!slide.generated_image && slide.title ? slide.title.substring(0, 15) : 'Preview'}
+                </div>
+            `;
+
+                slideItem.addEventListener('click', async () => {
+                    console.log('Clicked slide:', index, editor.slides[index]);
+
+                    // Save any pending changes to current slide before switching
+                    if (editor.autoSaveTimeout) {
+                        clearTimeout(editor.autoSaveTimeout);
+                        await editor.saveCurrentSlideContent();
+                    }
+
+                    // Update current slide index
+                    const previousSlide = editor.currentSlide;
+                    editor.currentSlide = index;
+
+                    // Update visual selection
+                    editor.updateSlidesList();
+
+                    // Render the selected slide
+                    await editor.renderSlide(index);
+
+                    // Update edit panel with the selected slide's data
+                    const currentSlideData = editor.slides[index];
+                    if (currentSlideData) {
+                        editor.updateUIControls(currentSlideData, index);
+
+                        // Force update after a short delay to ensure DOM is ready
+                        setTimeout(() => {
+                            editor.updateUIControls(currentSlideData, index);
+                        }, 50);
+                    }
+
+                    console.log('Switched to slide:', index, 'Previous:', previousSlide);
+                });
+
+                // Add delete button event listener
+                const deleteBtn = slideItem.querySelector('.delete-slide-btn');
+                deleteBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation(); // Prevent triggering slide selection
+                    console.log('Delete button clicked for slide:', slide.id, index);
+
+                    if (editor.slides.length <= 1) {
+                        toastr.error('Cannot delete the last slide');
+                        return;
+                    }
+
+                    if (!confirm('Are you sure you want to delete this slide?')) {
+                        return;
+                    }
+
+                    // Save any pending changes before deleting
+                    if (editor.autoSaveTimeout) {
+                        clearTimeout(editor.autoSaveTimeout);
+                        await editor.saveCurrentSlideContent();
+                    }
+
+                    try {
+                        console.log('Fetching /api/delete-slide/ for slide:', slide.id);
+                        const response = await fetch('/api/delete-slide/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            body: JSON.stringify({
+                                slide_id: slide.id
+                            })
+                        });
+                        console.log('Delete response status:', response.status);
+                        const data = await response.json();
+                        console.log('Delete response data:', data);
+
+                        if (data.success) {
+                            console.log('✅ Delete slide API call successful');
+
+                            // Store the current slide index before deletion
+                            const deletedIndex = index;
+                            console.log('🗑️ Deleting slide at index:', deletedIndex);
+
+                            // Remove slide from local array
+                            editor.slides.splice(index, 1);
+                            console.log('✅ Slide removed from local array. Remaining slides:', editor.slides.length);
+
+                            // Adjust current slide index safely
+                            const oldCurrentSlide = editor.currentSlide;
+                            if (editor.currentSlide >= editor.slides.length) {
+                                editor.currentSlide = Math.max(0, editor.slides.length - 1);
+                            } else if (editor.currentSlide > deletedIndex) {
+                                // If we deleted a slide before the current one, adjust index
+                                editor.currentSlide = Math.max(0, editor.currentSlide - 1);
+                            }
+                            console.log('🔄 Current slide adjusted from', oldCurrentSlide, 'to', editor.currentSlide);
+
+                            // Update UI counters
+                            document.getElementById('totalSlides').textContent = editor.slides.length;
+                            document.getElementById('currentSlide').textContent = `Slide ${editor.currentSlide + 1} of ${editor.slides.length}`;
+
+                            // Re-render slides list
+                            console.log('🔄 Calling renderSlidesList...');
+                            editor.renderSlidesList();
+
+                            // Re-render current slide
+                            if (editor.slides.length > 0) {
+                                console.log('🎨 Calling renderSlide for current slide...');
+                                await editor.renderSlide(editor.currentSlide);
+                                console.log('📝 Calling updateUIControls...');
+                                editor.updateUIControls(editor.slides[editor.currentSlide], editor.currentSlide);
+                            } else {
+                                editor.showEmptyState();
+                            }
+
+                            // Force complete UI refresh
+                            setTimeout(() => {
+                                console.log('🔄 Force UI refresh...');
+                                editor.updateSlidesList();
+                                if (editor.slides.length > 0) {
+                                    editor.updateUIControls(editor.slides[editor.currentSlide], editor.currentSlide);
+                                }
+                                console.log('✅ UI refresh complete');
+                            }, 100);
+
+                            console.log('✅ Slide deleted successfully');
+                            toastr.success('Slide deleted successfully');
+                        } else {
+                            console.error('❌ Delete slide API returned error:', data.error);
+                            toastr.error(data.error || 'Failed to delete slide');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting slide:', error);
+                        toastr.error('Failed to delete slide');
+                    }
+                });
+
+                slidesList.appendChild(slideItem);
+            });
+        }
+
+        updateSlidesList() {
+            document.querySelectorAll('.slide-item').forEach((item, index) => {
+                item.classList.toggle('active', index === this.currentSlide);
+            });
+        }
+
+        async saveCurrentSlideContent() {
+            if (!this.slides[this.currentSlide]) {
+                console.warn('No current slide to save');
+                return;
+            }
+
+            const slide = this.slides[this.currentSlide];
+            const slideData = {
+                title: document.getElementById('slideTitle')?.value || slide.title || '',
+                description: document.getElementById('slideDescription')?.value || slide.description || '',
+                extra_text: document.getElementById('slideExtraText')?.value || slide.extra_text || '',
+                image_prompt: document.getElementById('slideImagePrompt')?.value || slide.image_prompt || ''
+            };
+
+            // Update local slide data
+            Object.assign(slide, slideData);
+
+            // Update slides list display
+            this.renderSlidesList();
+
+            try {
+                const response = await fetch('/api/update-slide/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        slide_id: slide.id,
+                        slide_data: slideData
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('Slide content auto-saved successfully');
+                    // Update local slide with server response
+                    Object.assign(slide, data.slide);
+                } else {
+                    console.error('Failed to auto-save slide content:', data.error);
+                }
+            } catch (error) {
+                console.error('Error auto-saving slide content:', error);
+            }
+        }
+
+        async initKonva() {
+            const container = document.getElementById('konvaContainer');
+
+            this.stage = new Konva.Stage({
+                container: 'konvaContainer',
+                width: 1080,  // Default width
+                height: 1080  // Default height
+            });
+
+            this.layer = new Konva.Layer();
+            this.stage.add(this.layer);
+
+            // Add grid layer
+            this.gridLayer = new Konva.Layer();
+            this.stage.add(this.gridLayer);
+            // this.drawGrid();
+
+            this.hideEmptyState();
+
+            // Add transformer for editing
+            this.transformer = new Konva.Transformer({
+                rotateEnabled: true,
+                borderStroke: '#6366f1',
+                borderStrokeWidth: 2,
+                anchorStroke: '#6366f1',
+                anchorFill: 'white',
+                anchorSize: 10
+            });
+            this.layer.add(this.transformer);
+
+
+
+            // Handle window resize - resize stage to fit container
+            window.addEventListener('resize', () => {
+                this.fitStageToContainer();
+            });
+        }
+
+        fitStageToContainer() {
+            const container = document.querySelector('.canvas-container');
+            if (!container) return;
+
+            const containerWidth = container.clientWidth - 40; // padding/margin buffer
+            const containerHeight = container.clientHeight - 40; // padding/margin buffer
+
+            // Get slide dimensions
+            const slide = this.slides[this.currentSlide] || { canvas_width: 1080, canvas_height: 1080 };
+            const sceneWidth = slide.canvas_width || 1080;
+            const sceneHeight = slide.canvas_height || 1080;
+
+            // Calculate scale to fit
+            const scale = Math.min(
+                containerWidth / sceneWidth,
+                containerHeight / sceneHeight
+            );
+
+            // Update stage size and scale
+            this.stage.width(sceneWidth * scale);
+            this.stage.height(sceneHeight * scale);
+            this.stage.scale({ x: scale, y: scale });
+
+            // Redraw
+            this.layer.batchDraw();
+        }
+
+        async renderSlide(slideIndex) {
+            console.log('🎨 renderSlide called with index:', slideIndex);
+
+            if (slideIndex < 0 || slideIndex >= this.slides.length) {
+                console.error('❌ Invalid slide index:', slideIndex, 'Total slides:', this.slides.length);
+                return;
+            }
+
+            const slide = this.slides[slideIndex];
+            console.log('🎨 Rendering slide:', slideIndex, 'Slide data:', slide);
+
+            // Clear the layer
+            this.layer.destroyChildren();
+            console.log('🧹 Layer cleared');
+
+            const width = slide.canvas_width || 1080;
+            const height = slide.canvas_height || 1080;
+            console.log('📐 Canvas dimensions:', width, 'x', height);
+
+            // Fit stage to container
+            this.fitStageToContainer();
+            console.log('📐 Stage scaled to fit container');
+
+            // Redraw grid
+            // this.drawGrid();
+            console.log('🎯 Grid drawn');
+
+            // Save current state for undo
+            this.saveState();
+
+            // Create background based on available data
+            if (slide.generated_image) {
+                console.log('🖼️ Loading generated image:', slide.generated_image);
+                // Load and display generated image
+                const imageUrl = `/media/${slide.generated_image}`;
+                console.log('🖼️ Image URL:', imageUrl);
+
+                await this.loadImageAsBackground(imageUrl, width, height);
+                console.log('✅ Image loaded as background');
+            } else {
+                console.log('🎨 Using background color:', slide.background_color);
+                // Use background color
+                const background = new Konva.Rect({
+                    x: 0,
+                    y: 0,
+                    width: width,
+                    height: height,
+                    fill: slide.background_color || '#FFFFFF',
+                    stroke: '#e5e7eb',
+                    strokeWidth: 1,
+                    name: 'background'
+                });
+                this.layer.add(background);
+                console.log('✅ Background color applied');
+            }
+
+            // Create title text
+            const title = new Konva.Text({
+                x: slide.title_x !== null && slide.title_x !== undefined ? slide.title_x : width / 2,
+                y: slide.title_y !== null && slide.title_y !== undefined ? slide.title_y : height / 3 - 40,
+                text: slide.title || `Slide ${slideIndex + 1}`,
+                fontSize: 48,
+                fontFamily: 'Poppins',
+                fill: slide.font_color || '#000000',
+                align: 'center',
+                width: width * 0.8,
+                padding: 20,
+                lineHeight: 1.2,
+                shadowColor: 'rgba(0,0,0,0.3)',
+                shadowBlur: 5,
+                shadowOffset: { x: 2, y: 2 },
+                shadowOpacity: 0.8,
+                name: 'title',
+                draggable: true
+            });
+
+            if (slide.title_x === null || slide.title_x === undefined) {
+                title.offsetX(title.width() / 2);
+            }
+
+            // Create description text
+            const description = new Konva.Text({
+                x: slide.description_x !== null && slide.description_x !== undefined ? slide.description_x : width / 2,
+                y: slide.description_y !== null && slide.description_y !== undefined ? slide.description_y : height / 2 + 20,
+                text: slide.description || 'Add description here',
+                fontSize: 24,
+                fontFamily: 'Inter',
+                fill: slide.font_color || '#000000',
+                align: 'center',
+                width: width * 0.7,
+                padding: 20,
+                lineHeight: 1.4,
+                shadowColor: 'rgba(0,0,0,0.3)',
+                shadowBlur: 3,
+                shadowOffset: { x: 1, y: 1 },
+                shadowOpacity: 0.6,
+                name: 'description',
+                draggable: true
+            });
+
+            if (slide.description_x === null || slide.description_x === undefined) {
+                description.offsetX(description.width() / 2);
+            }
+
+            // Create extra text (if provided)
+            let extraText = null;
+            if (slide.extra_text && slide.extra_text.trim()) {
+                extraText = new Konva.Text({
+                    x: slide.extra_text_x !== null && slide.extra_text_x !== undefined ? slide.extra_text_x : width / 2,
+                    y: slide.extra_text_y !== null && slide.extra_text_y !== undefined ? slide.extra_text_y : height / 2 + 80,
+                    text: slide.extra_text,
+                    fontSize: 18,
+                    fontFamily: 'Inter',
+                    fill: slide.font_color || '#000000',
+                    align: 'center',
+                    width: width * 0.8,
+                    padding: 10,
+                    lineHeight: 1.3,
+                    shadowColor: 'rgba(0,0,0,0.2)',
+                    shadowBlur: 2,
+                    shadowOffset: { x: 1, y: 1 },
+                    shadowOpacity: 0.4,
+                    name: 'extraText',
+                    draggable: true
+                });
+                if (slide.extra_text_x === null || slide.extra_text_x === undefined) {
+                    extraText.offsetX(extraText.width() / 2);
+                }
+            }
+
+            // Add branding elements if project has them
+            if (this.project) {
+                // Profile image (bottom left)
+                if (this.project.profile_image) {
+                    const profileImg = new Image();
+                    profileImg.crossOrigin = 'anonymous';
+                    profileImg.onload = () => {
+                        const profileSize = 60;
+                        const konvaProfile = new Konva.Image({
+                            x: 20,
+                            y: height - profileSize - 20,
+                            image: profileImg,
+                            width: profileSize,
+                            height: profileSize,
+                            name: 'profileImage'
+                        });
+                        this.layer.add(konvaProfile);
+                        this.layer.batchDraw();
+                    };
+                    profileImg.src = `/media/${this.project.profile_image}`;
+                }
+
+                // Profile handle (next to profile image)
+                if (this.project.profile_handle) {
+                    const handleText = new Konva.Text({
+                        x: 90,
+                        y: height - 50,
+                        text: `@${this.project.profile_handle}`,
+                        fontSize: 16,
+                        fontFamily: 'Inter',
+                        fill: slide.font_color || '#000000',
+                        align: 'left',
+                        name: 'profileHandle',
+                        shadowColor: 'rgba(0,0,0,0.3)',
+                        shadowBlur: 2,
+                        shadowOffset: { x: 1, y: 1 },
+                        shadowOpacity: 0.6
+                    });
+                    this.layer.add(handleText);
+                }
+
+                // Brand logo (bottom right)
+                if (this.project.brand_logo) {
+                    const logoImg = new Image();
+                    logoImg.crossOrigin = 'anonymous';
+                    logoImg.onload = () => {
+                        const logoSize = 70;
+                        const konvaLogo = new Konva.Image({
+                            x: width - logoSize - 20,
+                            y: height - logoSize - 20,
+                            image: logoImg,
+                            width: logoSize,
+                            height: logoSize,
+                            name: 'brandLogo'
+                        });
+                        this.layer.add(konvaLogo);
+                        this.layer.batchDraw();
+                    };
+                    logoImg.src = `/media/${this.project.brand_logo}`;
+                }
+            }
+
+            // Add text to layer
+            const textElements = [title, description];
+            if (extraText) {
+                textElements.push(extraText);
+            }
+            this.layer.add(...textElements);
+            console.log('📝 Text elements added');
+
+            // Add drag snapping
+            this.addDragSnapping(title);
+            this.addDragSnapping(description);
+
+            // Make text editable
+            this.makeEditable(title, 'title');
+            this.makeEditable(description, 'description');
+            if (extraText) {
+                this.makeEditable(extraText, 'extraText');
+            }
+            console.log('✏️ Text editing enabled');
+
+            // Update UI controls with slide data
+            this.updateUIControls(slide, slideIndex);
+            console.log('📝 UI controls updated');
+
+            // Draw everything
+            this.layer.batchDraw();
+            console.log('✅ Slide rendered successfully');
+        }
+
+        async loadImageAsBackground(imageUrl, width, height) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+
+                img.onload = () => {
+                    const bgImage = new Konva.Image({
+                        x: 0,
+                        y: 0,
+                        image: img,
+                        width: width,
+                        height: height,
+                        name: 'backgroundImage'
+                    });
+
+                    this.layer.add(bgImage);
+                    bgImage.moveToBottom();
+                    resolve();
+                };
+
+                img.onerror = (error) => {
+                    console.error('Failed to load image:', imageUrl, error);
+                    // Fallback to color background
+                    const background = new Konva.Rect({
+                        x: 0,
+                        y: 0,
+                        width: width,
+                        height: height,
+                        fill: this.slides[this.currentSlide].background_color || '#FFFFFF',
+                        stroke: '#e5e7eb',
+                        strokeWidth: 1,
+                        name: 'background'
+                    });
+                    this.layer.add(background);
+                    reject(error);
+                };
+
+                img.src = imageUrl;
+            });
+        }
+
+        updateUIControls(slide, slideIndex) {
+            if (!slide) {
+                console.warn('updateUIControls called with null/undefined slide');
+                return;
+            }
+
+            console.log('Updating UI controls for slide:', slideIndex, slide);
+
+            try {
+                // Update slide counter
+                const currentSlideNumberEl = document.getElementById('currentSlideNumber');
+                const currentSlideEl = document.getElementById('currentSlide');
+
+                if (currentSlideNumberEl) {
+                    currentSlideNumberEl.textContent = slideIndex + 1;
+                }
+                if (currentSlideEl) {
+                    currentSlideEl.textContent = `Slide ${slideIndex + 1} of ${this.slides.length}`;
+                }
+
+                // Update form fields with null checks
+                const fields = [
+                    { id: 'slideTitle', value: slide.title || '' },
+                    { id: 'slideDescription', value: slide.description || '' },
+                    { id: 'slideExtraText', value: slide.extra_text || '' },
+                    { id: 'slideImagePrompt', value: slide.image_prompt || '' },
+                    { id: 'imagePrompt', value: slide.image_prompt || '' }, // Also populate the generate field
+                    { id: 'bgColor', value: slide.background_color || '#FFFFFF' },
+                    { id: 'fontColor', value: slide.font_color || '#000000' },
+                    { id: 'canvasWidth', value: slide.canvas_width || 1080 },
+                    { id: 'canvasHeight', value: slide.canvas_height || 1080 }
+                ];
+
+                fields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element) {
+                        element.value = field.value;
+                    } else {
+                        console.warn(`Element with id '${field.id}' not found`);
+                    }
+                });
+
+                console.log('Form fields updated:', {
+                    title: slide.title,
+                    description: slide.description,
+                    imagePrompt: slide.image_prompt
+                });
+
+                // Update generated image URL and preview if exists
+                const generatedImageUrlEl = document.getElementById('generatedImageUrl');
+                const imagePreviewEl = document.getElementById('imagePreview');
+
+                if (slide.generated_image) {
+                    const imageUrl = `/media/${slide.generated_image}`;
+
+                    if (generatedImageUrlEl) {
+                        generatedImageUrlEl.value = imageUrl;
+                    }
+
+                    // Update image preview
+                    if (imagePreviewEl) {
+                        imagePreviewEl.innerHTML = `<img src="${imageUrl}" alt="Generated" style="width:100%;height:100%;object-fit:cover">`;
+                    }
+                } else {
+                    if (generatedImageUrlEl) {
+                        generatedImageUrlEl.value = '';
+                    }
+
+                    if (imagePreviewEl) {
+                        imagePreviewEl.innerHTML = `
+                        <div class="empty-preview">
+                            <i class="fas fa-image"></i>
+                            <p>No image generated yet</p>
+                        </div>
+                    `;
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error in updateUIControls:', error);
+            }
+        }
+
+        makeEditable(textNode, fieldName) {
+            textNode.on('dblclick', () => {
+                const textPosition = textNode.absolutePosition();
+                const stageBox = this.stage.container().getBoundingClientRect();
+
+                const areaPosition = {
+                    x: stageBox.left + textPosition.x,
+                    y: stageBox.top + textPosition.y
+                };
+
+                const textarea = document.createElement('textarea');
+                document.body.appendChild(textarea);
+
+                textarea.value = textNode.text();
+                textarea.style.position = 'absolute';
+                textarea.style.top = areaPosition.y + 'px';
+                textarea.style.left = areaPosition.x + 'px';
+                textarea.style.width = textNode.width() + 'px';
+                textarea.style.height = textNode.height() + 'px';
+                textarea.style.fontSize = textNode.fontSize() + 'px';
+                textarea.style.border = '2px solid #6366f1';
+                textarea.style.padding = '5px';
+                textarea.style.margin = '0px';
+                textarea.style.overflow = 'hidden';
+                textarea.style.background = 'white';
+                textarea.style.outline = 'none';
+                textarea.style.resize = 'none';
+                textarea.style.lineHeight = textNode.lineHeight();
+                textarea.style.fontFamily = textNode.fontFamily();
+                textarea.style.transformOrigin = 'left top';
+                textarea.style.textAlign = textNode.align();
+                textarea.style.color = textNode.fill();
+                textarea.style.zIndex = '1000';
+                textarea.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                textarea.focus();
+
+                const transform = textNode.getAbsoluteTransform().copy();
+                transform.invert();
+                const textareaOffset = transform.point(textNode.offset());
+
+                textarea.style.top = (areaPosition.y - textareaOffset.y) + 'px';
+                textarea.style.left = (areaPosition.x - textareaOffset.x) + 'px';
+
+                const removeTextarea = () => {
+                    textarea.removeEventListener('blur', removeTextarea);
+                    textarea.remove();
+                    window.removeEventListener('click', handleOutsideClick);
+
+                    // Update slide data
+                    const newText = textarea.value;
+                    if (fieldName === 'title') {
+                        this.slides[this.currentSlide].title = newText;
+                    } else if (fieldName === 'description') {
+                        this.slides[this.currentSlide].description = newText;
+                    } else if (fieldName === 'extraText') {
+                        this.slides[this.currentSlide].extra_text = newText;
+                    }
+                    textNode.text(newText);
+
+                    // Update form field
+                    if (fieldName === 'title') {
+                        document.getElementById('slideTitle').value = newText;
+                    } else if (fieldName === 'description') {
+                        document.getElementById('slideDescription').value = newText;
+                    } else if (fieldName === 'extraText') {
+                        document.getElementById('slideExtraText').value = newText;
+                    }
+
+                    this.layer.batchDraw();
+                    toastr.success(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} updated`);
+                };
+
+                textarea.addEventListener('blur', removeTextarea);
+
+                const handleOutsideClick = (e) => {
+                    if (e.target !== textarea) {
+                        removeTextarea();
+                    }
+                };
+
+                setTimeout(() => {
+                    window.addEventListener('click', handleOutsideClick);
+                });
+            });
+        }
+
+        saveState() {
+            // Save current state for undo/redo
+            if (this.slides[this.currentSlide]) {
+                this.undoStack.push(JSON.stringify(this.slides[this.currentSlide]));
+                if (this.undoStack.length > 50) this.undoStack.shift();
+                this.redoStack = [];
+            }
+        }
+
+        setupEventListeners() {
+            // Navigation
+            document.getElementById('prevSlide').addEventListener('click', () => {
+                if (this.currentSlide > 0) {
+                    this.currentSlide--;
+                    this.renderSlide(this.currentSlide);
+                    this.updateSlidesList();
+                }
+            });
+
+            document.getElementById('nextSlide').addEventListener('click', () => {
+                if (this.currentSlide < this.slides.length - 1) {
+                    this.currentSlide++;
+                    this.renderSlide(this.currentSlide);
+                    this.updateSlidesList();
+                }
+            });
+
+            // Design controls
+            document.getElementById('bgColor').addEventListener('change', (e) => {
+                if (this.slides[this.currentSlide]) {
+                    this.slides[this.currentSlide].background_color = e.target.value;
+                    this.renderSlide(this.currentSlide);
+                    this.renderSlidesList();
+                    toastr.info('Background color updated');
+                }
+            });
+
+            document.getElementById('fontColor').addEventListener('change', (e) => {
+                if (this.slides[this.currentSlide]) {
+                    this.slides[this.currentSlide].font_color = e.target.value;
+                    this.renderSlide(this.currentSlide);
+                    toastr.info('Font color updated');
+                }
+            });
+
+            document.getElementById('fontFamily').addEventListener('change', (e) => {
+                if (this.layer && this.layer.children.length > 1) {
+                    const textNodes = this.layer.children.filter(child =>
+                        child.className === 'Text' && (child.name() === 'title' || child.name() === 'description')
+                    );
+                    textNodes.forEach(node => {
+                        node.fontFamily(e.target.value);
+                    });
+                    this.layer.batchDraw();
+                    toastr.info('Font family updated');
+                }
+            });
+
+            document.getElementById('layout').addEventListener('change', (e) => {
+                if (this.layer && this.slides[this.currentSlide]) {
+                    const layout = e.target.value;
+                    const title = this.layer.findOne('.title');
+                    const description = this.layer.findOne('.description');
+
+                    if (title && description) {
+                        const width = this.stage.width();
+                        const height = this.stage.height();
+
+                        switch (layout) {
+                            case 'centered':
+                                title.x(width / 2);
+                                title.y(height / 3 - 40);
+                                description.x(width / 2);
+                                description.y(height / 2 + 20);
+                                break;
+                            case 'left':
+                                title.x(width * 0.1);
+                                title.y(height / 3 - 40);
+                                description.x(width * 0.1);
+                                description.y(height / 2 + 20);
+                                break;
+                            case 'split':
+                                title.x(width * 0.1);
+                                title.y(height / 3);
+                                description.x(width * 0.6);
+                                description.y(height / 3);
+                                break;
+                            case 'top':
+                                title.x(width / 2);
+                                title.y(height * 0.2);
+                                description.x(width / 2);
+                                description.y(height * 0.4);
+                                break;
+                        }
+
+                        title.offsetX(title.width() / 2);
+                        description.offsetX(description.width() / 2);
+                        this.layer.batchDraw();
+                        toastr.info('Layout updated');
+                    }
+                }
+            });
+
+            // Content update
+            document.getElementById('updateContent').addEventListener('click', async () => {
+                if (this.slides[this.currentSlide]) {
+                    const slide = this.slides[this.currentSlide];
+
+                    // Update via API
+                    try {
+                        const response = await fetch('/api/update-slide/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            body: JSON.stringify({
+                                slide_id: slide.id,
+                                slide_data: {
+                                    title: document.getElementById('slideTitle').value,
+                                    description: document.getElementById('slideDescription').value,
+                                    extra_text: document.getElementById('slideExtraText').value,
+                                    image_prompt: document.getElementById('slideImagePrompt').value,
+                                    background_color: document.getElementById('bgColor').value,
+                                    description: document.getElementById('slideDescription').value,
+                                    extra_text: document.getElementById('slideExtraText').value,
+                                    image_prompt: document.getElementById('slideImagePrompt').value,
+                                    background_color: document.getElementById('bgColor').value,
+                                    font_color: document.getElementById('fontColor').value,
+
+                                    // Preserve coordinates
+                                    title_x: slide.title_x,
+                                    title_y: slide.title_y,
+                                    description_x: slide.description_x,
+                                    description_y: slide.description_y,
+                                    extra_text_x: slide.extra_text_x,
+                                    extra_text_y: slide.extra_text_y
+                                }
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            // Update local slide data with server response
+                            Object.assign(slide, data.slide);
+                            this.renderSlide(this.currentSlide);
+                            this.renderSlidesList();
+                            toastr.success('Slide content updated');
+                        } else {
+                            toastr.error(data.error || 'Failed to update slide');
+                        }
+                    } catch (error) {
+                        console.error('Error updating slide:', error);
+                        toastr.error('Failed to update slide');
+                    }
+                }
+            });
+
+            // Regenerate slide with AI
+            document.getElementById('regenerateSlide').addEventListener('click', async () => {
+                if (!this.slides[this.currentSlide]) {
+                    toastr.error('No slide selected');
+                    return;
+                }
+
+                const slide = this.slides[this.currentSlide];
+                const topic = slide.title || 'Slide content';
+
+                toastr.info('Regenerating slide content with AI...');
+
+                try {
+                    const response = await fetch('/api/regenerate-slide/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            slide_id: slide.id,
+                            topic: topic
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update slide with new content
+                        Object.assign(slide, data.slide);
+                        this.renderSlide(this.currentSlide);
+                        this.renderSlidesList();
+                        toastr.success('Slide regenerated with AI!');
+                    } else {
+                        toastr.error(data.error || 'Failed to regenerate slide');
+                    }
+                } catch (error) {
+                    console.error('Error regenerating slide:', error);
+                    toastr.error('Failed to regenerate slide');
+                }
+            });
+
+            // Generate image
+            document.getElementById('generateImageBtn').addEventListener('click', async () => {
+                const prompt = document.getElementById('imagePrompt').value;
+                if (!prompt.trim()) {
+                    toastr.error('Please enter an image description');
+                    return;
+                }
+
+                if (!this.slides[this.currentSlide]) {
+                    toastr.error('No slide selected');
+                    return;
+                }
+
+                const slide = this.slides[this.currentSlide];
+
+                toastr.info('Generating Canva-style image...');
+
+                try {
+                    const response = await fetch('/api/generate-and-apply/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            description: prompt,
+                            slide_id: slide.id,
+                            platform: 'instagram'
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update slide with generated image
+                        slide.generated_image = data.filename;
+                        slide.image_prompt = prompt;
+
+                        // Update UI
+                        document.getElementById('slideImagePrompt').value = prompt;
+                        document.getElementById('generatedImageUrl').value = data.image_url;
+
+                        // Update image preview
+                        const imagePreview = document.getElementById('imagePreview');
+                        imagePreview.innerHTML = `<img src="${data.image_url}" alt="Generated" style="width:100%;height:100%;object-fit:cover">`;
+
+                        // Re-render slide with new image
+                        await this.renderSlide(this.currentSlide);
+                        this.renderSlidesList();
+
+                        toastr.success('Canva image generated and applied to slide!');
+                    } else {
+                        toastr.error(data.error || 'Failed to generate image');
+                    }
+                } catch (error) {
+                    console.error('Error generating image:', error);
+                    toastr.error('Failed to generate image');
+                }
+            });
+
+            // Save design
+            document.getElementById('saveDesign').addEventListener('click', async () => {
+                if (this.slides[this.currentSlide]) {
+                    const slide = this.slides[this.currentSlide];
+
+                    try {
+                        const response = await fetch('/api/update-slide/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            body: JSON.stringify({
+                                slide_id: slide.id,
+                                slide_data: {
+                                    title: slide.title,
+                                    description: slide.description,
+                                    image_prompt: slide.image_prompt,
+                                    background_color: slide.background_color,
+                                    font_color: slide.font_color,
+
+                                    // Add coordinates
+                                    title_x: slide.title_x,
+                                    title_y: slide.title_y,
+                                    description_x: slide.description_x,
+                                    description_y: slide.description_y,
+                                    extra_text: slide.extra_text,
+                                    extra_text_x: slide.extra_text_x,
+                                    extra_text_y: slide.extra_text_y
+                                }
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            toastr.success('Slide design saved successfully');
+                        } else {
+                            toastr.error(data.error || 'Failed to save design');
+                        }
+                    } catch (error) {
+                        console.error('Error saving design:', error);
+                        toastr.error('Failed to save design');
+                    }
+                }
+            });
+
+            // Save all designs
+            document.getElementById('saveAllDesigns').addEventListener('click', async () => {
+                if (this.slides.length === 0) {
+                    toastr.error('No slides to save');
+                    return;
+                }
+
+                toastr.info('Saving all slides...');
+
+                try {
+                    let savedCount = 0;
+                    let errorCount = 0;
+
+                    for (const slide of this.slides) {
+                        try {
+                            const response = await fetch('/api/update-slide/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCSRFToken()
+                                },
+                                body: JSON.stringify({
+                                    slide_id: slide.id,
+                                    slide_data: {
+                                        title: slide.title,
+                                        description: slide.description,
+                                        image_prompt: slide.image_prompt,
+                                        background_color: slide.background_color,
+                                        font_color: slide.font_color
+                                    }
+                                })
+                            });
+
+                            const data = await response.json();
+                            if (data.success) {
+                                savedCount++;
+                            } else {
+                                errorCount++;
+                            }
+                        } catch (error) {
+                            errorCount++;
+                        }
+                    }
+
+                    if (errorCount === 0) {
+                        toastr.success(`All ${savedCount} slides saved successfully`);
+                    } else {
+                        toastr.warning(`${savedCount} slides saved, ${errorCount} failed`);
+                    }
+                } catch (error) {
+                    console.error('Error saving all designs:', error);
+                    toastr.error('Failed to save all designs');
+                }
+            });
+
+            // Export
+            document.getElementById('exportBtn').addEventListener('click', () => {
+                this.exportSlides();
+            });
+
+
+
+            document.getElementById('fullscreen').addEventListener('click', () => {
+                const container = document.getElementById('konvaContainer');
+                if (!document.fullscreenElement) {
+                    container.requestFullscreen().catch(err => {
+                        console.error('Error attempting to enable fullscreen:', err);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            // Undo/Redo
+            document.getElementById('undo').addEventListener('click', () => {
+                if (this.undoStack.length > 0) {
+                    const previousState = this.undoStack.pop();
+                    this.redoStack.push(JSON.stringify(this.slides[this.currentSlide]));
+                    this.slides[this.currentSlide] = JSON.parse(previousState);
+                    this.renderSlide(this.currentSlide);
+                    this.renderSlidesList();
+                    toastr.info('Undo applied');
+                }
+            });
+
+            document.getElementById('redo').addEventListener('click', () => {
+                if (this.redoStack.length > 0) {
+                    const nextState = this.redoStack.pop();
+                    this.undoStack.push(JSON.stringify(this.slides[this.currentSlide]));
+                    this.slides[this.currentSlide] = JSON.parse(nextState);
+                    this.renderSlide(this.currentSlide);
+                    this.renderSlidesList();
+                    toastr.info('Redo applied');
+                }
+            });
+
+            // Auto-save slide content when fields change
+            const autoSaveFields = ['slideTitle', 'slideDescription', 'slideExtraText', 'slideImagePrompt'];
+            autoSaveFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', (e) => {
+                        // Debounce auto-save
+                        clearTimeout(this.autoSaveTimeout);
+                        this.autoSaveTimeout = setTimeout(async () => {
+                            await this.saveCurrentSlideContent();
+                        }, 1000); // Save after 1 second of no typing
+                    });
+
+                    field.addEventListener('blur', async (e) => {
+                        // Save immediately on blur (when user leaves the field)
+                        clearTimeout(this.autoSaveTimeout);
+                        await this.saveCurrentSlideContent();
+                    });
+                }
+            });
+
+            // Add slide button
+            document.getElementById('addSlide').addEventListener('click', async () => {
+                console.log('Add slide button clicked');
+                if (!this.projectId) {
+                    console.log('No project ID');
+                    toastr.error('No project loaded');
+                    return;
+                }
+
+                // Save any pending changes before adding new slide
+                if (this.autoSaveTimeout) {
+                    clearTimeout(this.autoSaveTimeout);
+                    await this.saveCurrentSlideContent();
+                }
+
+                console.log('Making API call to add slide');
+                try {
+                    console.log('Fetching /api/add-slide/');
+                    const response = await fetch('/api/add-slide/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            project_id: this.projectId
+                        })
+                    });
+                    console.log('Response status:', response.status);
+                    const data = await response.json();
+                    console.log('Response data:', data);
+
+                    if (data.success) {
+                        console.log('✅ Add slide API call successful');
+                        console.log('New slide data:', data.slide);
+
+                        // Add the new slide to local array
+                        this.slides.push(data.slide);
+                        this.currentSlide = this.slides.length - 1;
+
+                        console.log('✅ Slide added to local array. Total slides:', this.slides.length);
+                        console.log('✅ Current slide index set to:', this.currentSlide);
+
+                        // Update UI counters
+                        document.getElementById('totalSlides').textContent = this.slides.length;
+                        document.getElementById('currentSlide').textContent = `Slide ${this.currentSlide + 1} of ${this.slides.length}`;
+
+                        // Update slides list first
+                        console.log('🔄 Calling renderSlidesList...');
+                        this.renderSlidesList();
+
+                        // Render the new slide in the canvas
+                        console.log('🎨 Calling renderSlide for new slide...');
+                        await this.renderSlide(this.currentSlide);
+
+                        // Update the edit panel with new slide data
+                        console.log('📝 Calling updateUIControls...');
+                        this.updateUIControls(data.slide, this.currentSlide);
+
+                        // Force a complete UI refresh to ensure everything is in sync
+                        setTimeout(() => {
+                            console.log('🔄 Force UI refresh...');
+                            this.updateSlidesList();
+                            this.updateUIControls(this.slides[this.currentSlide], this.currentSlide);
+                            console.log('✅ UI refresh complete');
+                        }, 100);
+
+                        console.log('✅ New slide added successfully');
+                        toastr.success('New slide added');
+                    } else {
+                        console.error('❌ Add slide API returned error:', data.error);
+                        toastr.error(data.error || 'Failed to add slide');
+                    }
+                } catch (error) {
+                    console.error('Error adding slide:', error);
+                    toastr.error('Failed to add slide');
+                }
+            });
+
+            // Update canvas size
+            document.getElementById('updateCanvasSize').addEventListener('click', async () => {
+                const width = parseInt(document.getElementById('canvasWidth').value);
+                const height = parseInt(document.getElementById('canvasHeight').value);
+
+                if (!width || !height || width < 100 || height < 100 || width > 4000 || height > 4000) {
+                    toastr.error('Please enter valid dimensions (100-4000px)');
+                    return;
+                }
+
+                if (this.slides[this.currentSlide]) {
+                    const slide = this.slides[this.currentSlide];
+                    slide.canvas_width = width;
+                    slide.canvas_height = height;
+
+                    // Update via API
+                    try {
+                        const response = await fetch('/api/update-slide/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            body: JSON.stringify({
+                                slide_id: slide.id,
+                                slide_data: {
+                                    canvas_width: width,
+                                    canvas_height: height
+                                }
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            // Re-render with new dimensions
+                            await this.renderSlide(this.currentSlide);
+                            toastr.success('Canvas size updated');
+                        } else {
+                            toastr.error(data.error || 'Failed to update canvas size');
+                        }
+                    } catch (error) {
+                        console.error('Error updating canvas size:', error);
+                        toastr.error('Failed to update canvas size');
+                    }
+                }
+            });
+
+            // Apply platform template
+            document.getElementById('applyTemplate').addEventListener('click', () => {
+                const platform = document.getElementById('platformSelect').value;
+                const format = document.getElementById('formatSelect').value;
+
+                // Get dimensions from utils
+                const dimensions = this.getPlatformDimensions(platform, format);
+
+                document.getElementById('canvasWidth').value = dimensions.width;
+                document.getElementById('canvasHeight').value = dimensions.height;
+
+                toastr.info(`Applied ${platform} ${format} template (${dimensions.width}×${dimensions.height})`);
+            });
+        }
+
+        drawGrid() {
+            this.gridLayer.destroyChildren();
+
+            const width = this.stage.width();
+            const height = this.stage.height();
+            const gridSize = 20;
+
+            // Draw vertical lines
+            for (let x = 0; x <= width; x += gridSize) {
+                const line = new Konva.Line({
+                    points: [x, 0, x, height],
+                    stroke: 'rgba(0,0,0,0.1)',
+                    strokeWidth: 1
+                });
+                this.gridLayer.add(line);
+            }
+
+            // Draw horizontal lines
+            for (let y = 0; y <= height; y += gridSize) {
+                const line = new Konva.Line({
+                    points: [0, y, width, y],
+                    stroke: 'rgba(0,0,0,0.1)',
+                    strokeWidth: 1
+                });
+                this.gridLayer.add(line);
+            }
+
+            this.gridLayer.batchDraw();
+        }
+
+        addDragSnapping(node) {
+            node.on('dragend', () => {
+                const x = Math.round(node.x());
+                const y = Math.round(node.y());
+
+                // Update slide data locally
+                if (this.slides[this.currentSlide]) {
+                    const slide = this.slides[this.currentSlide];
+                    const nodeName = node.name();
+
+                    if (nodeName === 'title') {
+                        slide.title_x = x;
+                        slide.title_y = y;
+                    } else if (nodeName === 'description') {
+                        slide.description_x = x;
+                        slide.description_y = y;
+                    } else if (nodeName === 'extraText') {
+                        slide.extra_text_x = x;
+                        slide.extra_text_y = y;
+                    }
+
+                    this.saveState();
+                }
+            });
+
+            node.on('dragmove', () => {
+                const gridSize = 20;
+                // Snap logic removed as per grid removal request, but keeping bounds check
+
+                // Keep within bounds
+                const width = this.stage.width();
+                const height = this.stage.height();
+
+                if (node.x() < 0) node.x(0);
+                if (node.y() < 0) node.y(0);
+                if (node.x() + node.width() > width) node.x(width - node.width());
+                if (node.y() + node.height() > height) node.y(height - node.height());
+            });
+        }
+
+        getPlatformDimensions(platform, format) {
+            const dimensions = {
+                'instagram': {
+                    'square': { width: 1080, height: 1080 },
+                    'portrait': { width: 1080, height: 1350 },
+                    'story': { width: 1080, height: 1920 },
+                    'landscape': { width: 1080, height: 608 }  // Fallback
+                },
+                'linkedin': {
+                    'square': { width: 1080, height: 1080 },
+                    'portrait': { width: 1080, height: 1350 },  // Fallback
+                    'story': { width: 1080, height: 1920 },     // Fallback
+                    'landscape': { width: 1200, height: 627 }
+                }
+            };
+
+            return dimensions[platform]?.[format] || dimensions['instagram']['square'];
+        }
+
+        zoom(factor) {
+            const oldScale = this.stage.scaleX();
+            const newScale = oldScale * factor;
+
+            const center = {
+                x: this.stage.width() / 2,
+                y: this.stage.height() / 2
+            };
+
+            const relatedTo = {
+                x: (center.x - this.stage.x()) / oldScale,
+                y: (center.y - this.stage.y()) / oldScale
+            };
+
+            this.stage.scale({ x: newScale, y: newScale });
+
+            const newPos = {
+                x: center.x - relatedTo.x * newScale,
+                y: center.y - relatedTo.y * newScale
+            };
+
+            this.stage.position(newPos);
+            this.scale = newScale;
+            this.layer.batchDraw();
+        }
+
+        async exportSlides() {
+            if (this.slides.length === 0) {
+                toastr.error('No slides to export');
+                return;
+            }
+
+            toastr.info('Exporting slides as images...');
+
+            // Export each slide
+            for (let i = 0; i < this.slides.length; i++) {
+                await this.exportSlide(i);
+            }
+
+            toastr.success('All slides exported successfully!');
+        }
+
+        async exportSlide(slideIndex) {
+            // Switch to the slide
+            this.currentSlide = slideIndex;
+            await this.renderSlide(slideIndex);
+
+            // Wait for render
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Export as image
+            const dataURL = this.stage.toDataURL({
+                mimeType: 'image/png',
+                quality: 1.0,
+                pixelRatio: 3
+            });
+
+            // Download
+            const link = document.createElement('a');
+            link.download = `carousel-slide-${slideIndex + 1}-${this.slides[slideIndex].title?.substring(0, 20) || 'slide'}.png`;
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Small delay between exports
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+
+    // Text Controls Functionality
+    class TextControls {
+        constructor(editor) {
+            this.editor = editor;
+            this.isReady = true; // Editor is already initialized when TextControls is created
+            this.init();
+        }
+
+        init() {
+            console.log('Initializing TextControls');
+            // Title Controls
+            this.initColorControl('titleColor', 'title');
+            this.initRangeControl('titleFontSize', 'title', 'fontSize');
+            this.initSelectControl('titleFontFamily', 'title', 'fontFamily');
+            this.initButtonGroup('title-weight-btn', 'title', 'fontWeight', 'data-weight');
+            this.initButtonGroup('title-alignment-btn', 'title', 'align', 'data-align');
+
+            // Description Controls
+            this.initColorControl('descriptionColor', 'description');
+            this.initRangeControl('descriptionFontSize', 'description', 'fontSize');
+            this.initSelectControl('descriptionFontFamily', 'description', 'fontFamily');
+            this.initButtonGroup('description-weight-btn', 'description', 'fontWeight', 'data-weight');
+            this.initButtonGroup('description-alignment-btn', 'description', 'align', 'data-align');
+
+            // General Text Controls
+            this.initRangeControl('lineHeight', 'all', 'lineHeight');
+            this.initRangeControl('letterSpacing', 'all', 'letterSpacing');
+            this.initButtonGroup('transform-btn', 'all', 'textTransform', 'data-transform');
+            console.log('TextControls initialization complete');
+        }
+
+        initColorControl(elementId, target) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener('input', (e) => {
+                    this.updateTextProperty(target, 'fill', e.target.value);
+                });
+            }
+        }
+
+        initRangeControl(elementId, target, property) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener('input', (e) => {
+                    let value = e.target.value;
+                    if (property === 'fontSize') {
+                        value = parseInt(value);
+                    } else if (property === 'lineHeight') {
+                        value = parseFloat(value);
+                    } else if (property === 'letterSpacing') {
+                        value = parseFloat(value);
+                    }
+                    this.updateTextProperty(target, property, value);
+                });
+            }
+        }
+
+        initSelectControl(elementId, target, property) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener('change', (e) => {
+                    this.updateTextProperty(target, property, e.target.value);
+                });
+            }
+        }
+
+        initButtonGroup(className, target, property, dataAttr) {
+            const buttons = document.querySelectorAll(`.${className}`);
+            buttons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Remove active class from siblings
+                    const siblings = button.parentElement.querySelectorAll(`.${className}`);
+                    siblings.forEach(sib => sib.classList.remove('active'));
+
+                    // Add active class to clicked button
+                    button.classList.add('active');
+
+                    // Update text property
+                    const value = button.getAttribute(dataAttr);
+                    this.updateTextProperty(target, property, value);
+                });
+            });
+        }
+
+        updateTextProperty(target, property, value) {
+            console.log(`Updating ${target} ${property} to:`, value);
+            if (!this.editor || !this.editor.layer) {
+                console.warn('Editor or layer not available');
+                return;
+            }
+
+            const layer = this.editor.layer;
+            let textsToUpdate = [];
+
+            if (target === 'title') {
+                textsToUpdate = layer.find('.title');
+            } else if (target === 'description') {
+                textsToUpdate = layer.find('.description');
+            } else if (target === 'all') {
+                textsToUpdate = layer.find('Text');
+            }
+
+            if (textsToUpdate.length === 0) {
+                console.warn(`No text objects found for target: ${target}`);
+                return;
+            }
+
+            textsToUpdate.forEach((text, index) => {
+                try {
+                    if (property === 'fontWeight') {
+                        text.fontStyle(value === 'bold' ? 'bold' : 'normal');
+                    } else if (property === 'align') {
+                        text.align(value);
+                    } else if (property === 'textTransform') {
+                        const originalText = text.text();
+                        switch (value) {
+                            case 'uppercase':
+                                text.text(originalText.toUpperCase());
+                                break;
+                            case 'lowercase':
+                                text.text(originalText.toLowerCase());
+                                break;
+                            case 'capitalize':
+                                text.text(originalText.replace(/\b\w/g, l => l.toUpperCase()));
+                                break;
+                            default:
+                                text.text(originalText);
+                        }
+                    } else if (typeof text[property] === 'function') {
+                        text[property](value);
+                    } else {
+                        console.warn(`Property ${property} not available on text object`);
+                    }
+                } catch (error) {
+                    console.error(`Error updating text property ${property}:`, error);
+                }
+            });
+
+            layer.draw();
+            this.editor.saveCurrentSlideContent();
+        }
+    }
+
+    // Initialize editor when page loads
+    document.addEventListener('DOMContentLoaded', async () => {
+        const pathParts = window.location.pathname.split('/');
+        const projectId = pathParts[2];
+
+        if (projectId && !isNaN(projectId)) {
+            console.log('Initializing editor for project:', projectId);
+            window.carouselEditor = new CarouselEditor(projectId);
+            await window.carouselEditor.initialize();
+            window.textControls = new TextControls(window.carouselEditor);
+            console.log('Editor and TextControls initialized');
+        } else {
+            console.error('Invalid project ID provided:', projectId);
+            toastr.error('Invalid project ID. Please generate a carousel first.');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        }
+    });
+</script>
+{% endblock %}

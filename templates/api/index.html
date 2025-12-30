@@ -1,0 +1,508 @@
+{% extends 'api/base.html' %}
+{% load static %}
+
+{% block title %}AI Carousel Generator Pro{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section" role="banner">
+    <div class="hero-container">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Create <span class="gradient-text">Stunning</span> Social Media Carousels
+            </h1>
+            <p class="hero-subtitle">
+                Transform your ideas into professional carousel posts with AI-powered content generation,
+                Canva-style backgrounds, and platform-optimized designs.
+            </p>
+            <div class="hero-stats" role="region" aria-label="Statistics">
+                <div class="stat">
+                    <span class="stat-number">10K+</span>
+                    <span class="stat-label">Carousels Created</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">50+</span>
+                    <span class="stat-label">Templates</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">AI-Powered</span>
+                    <span class="stat-label">Content Generation</span>
+                </div>
+            </div>
+            <a href="#generator" class="btn btn-primary btn-large scroll-to-generator" role="button"
+                aria-label="Start creating carousels">
+                <i class="fas fa-magic" aria-hidden="true"></i>
+                Start Creating
+            </a>
+        </div>
+        <div class="hero-visual" role="presentation">
+            <div class="carousel-showcase" aria-label="Carousel examples">
+                <div class="showcase-slide slide-1" role="img" aria-label="Professional LinkedIn carousel example">
+                    <div class="slide-content">
+                        <h3>Professional</h3>
+                        <p>LinkedIn Optimized</p>
+                    </div>
+                </div>
+                <div class="showcase-slide slide-2" role="img" aria-label="Creative Instagram carousel example">
+                    <div class="slide-content">
+                        <h3>Creative</h3>
+                        <p>Instagram Ready</p>
+                    </div>
+                </div>
+                <div class="showcase-slide slide-3" role="img" aria-label="Modern brand carousel example">
+                    <div class="slide-content">
+                        <h3>Modern</h3>
+                        <p>Brand Perfect</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="main-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <i class="fas fa-palette" aria-hidden="true"></i>
+                <span>Carousel Forge</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'index' %}" class="nav-item active" aria-current="page">
+                <i class="fas fa-magic" aria-hidden="true"></i>
+                <span>Generator</span>
+            </a>
+            <a href="{% url 'templates' %}" class="nav-item">
+                <i class="fas fa-th-large" aria-hidden="true"></i>
+                <span>Templates</span>
+            </a>
+            <a href="{% url 'recent' %}" class="nav-item">
+                <i class="fas fa-history" aria-hidden="true"></i>
+                <span>Recent</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="upgrade-box">
+                <div class="upgrade-icon">
+                    <i class="fas fa-crown" aria-hidden="true"></i>
+                </div>
+                <h4>Pro Features</h4>
+                <p>Unlock unlimited generations & premium templates</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" role="main">
+        <!-- Generator Panel -->
+        <div class="content-panel" id="generatorPanel">
+            <div class="panel-header">
+                <h1><i class="fas fa-sparkles" aria-hidden="true"></i> Create Your Carousel</h1>
+                <p>Fill in the details below and let AI craft your perfect carousel</p>
+            </div>
+
+            <div class="panel-content">
+                <form id="carouselForm" class="carousel-form" role="form" aria-label="Carousel generation form">
+                    {% csrf_token %}
+
+                    <!-- Branding Section -->
+                    <div class="form-section branding-section">
+                        <h3 class="section-title-small">
+                            <i class="fas fa-building" aria-hidden="true"></i>
+                            Brand Assets
+                        </h3>
+                        <div class="branding-grid">
+                            <div class="brand-upload">
+                                <label class="upload-label" for="profileImage" tabindex="0" role="button"
+                                    aria-label="Upload profile picture">
+                                    <div class="upload-icon">
+                                        <i class="fas fa-user-circle" aria-hidden="true"></i>
+                                    </div>
+                                    <span>Profile Picture</span>
+                                    <input type="file" id="profileImage" accept="image/*" class="file-input"
+                                        aria-describedby="profile-help">
+                                </label>
+                                <div class="upload-preview" id="profilePreview" role="img"
+                                    aria-label="Profile picture preview"></div>
+                            </div>
+
+                            <div class="brand-upload">
+                                <label class="upload-label" for="brandLogo" tabindex="0" role="button"
+                                    aria-label="Upload brand logo">
+                                    <div class="upload-icon">
+                                        <i class="fas fa-image" aria-hidden="true"></i>
+                                    </div>
+                                    <span>Brand Logo</span>
+                                    <input type="file" id="brandLogo" accept="image/*" class="file-input"
+                                        aria-describedby="logo-help">
+                                </label>
+                                <div class="upload-preview" id="logoPreview" role="img" aria-label="Logo preview"></div>
+                            </div>
+
+                            <div class="brand-input">
+                                <label for="profileHandle" class="form-label">
+                                    <i class="fab fa-instagram" aria-hidden="true"></i>
+                                    Social Handle
+                                </label>
+                                <input type="text" id="profileHandle" name="profile_handle" placeholder="@yourbrand"
+                                    class="form-input" aria-describedby="handle-help">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid var(--light-gray); margin: 1.5rem 0;"
+                        aria-hidden="true">
+
+                    <!-- Content Section -->
+                    <div class="form-section">
+                        <label for="topic" class="form-label">
+                            <i class="fas fa-edit" aria-hidden="true"></i>
+                            Content Description
+                        </label>
+                        <textarea id="topic" name="topic" class="form-textarea"
+                            placeholder="Describe what your carousel should be about. Be specific about the topic, tone, and key messages you want to convey..."
+                            required aria-describedby="topic-help"></textarea>
+                        <div class="form-hint" id="topic-help">
+                            <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                            Tip: The more detailed your description, the better the AI-generated content will be.
+                        </div>
+                    </div>
+
+                    <!-- Platform & Style Selection -->
+                    <div class="form-section">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="platform">
+                                    <i class="fas fa-globe" aria-hidden="true"></i>
+                                    Platform
+                                </label>
+                                <select id="platform" name="platform" class="form-select" required
+                                    aria-describedby="platform-help">
+                                    <option value="instagram">Instagram</option>
+                                    <option value="linkedin">LinkedIn</option>
+                                    <option value="twitter">Twitter</option>
+                                    <option value="presentation">Presentation</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="style">
+                                    <i class="fas fa-palette" aria-hidden="true"></i>
+                                    Design Style
+                                </label>
+                                <select id="style" name="style" class="form-select" required
+                                    aria-describedby="style-help">
+                                    <option value="modern">Modern</option>
+                                    <option value="professional">Professional</option>
+                                    <option value="creative">Creative</option>
+                                    <option value="vibrant">Vibrant</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Platform Preview -->
+                        <div class="platform-preview-section">
+                            <h4>Platform Preview</h4>
+                            <div class="platform-cards" role="radiogroup" aria-label="Platform selection">
+                                <div class="platform-card instagram-card active" data-platform="instagram" role="radio"
+                                    aria-checked="true" tabindex="0">
+                                    <i class="fab fa-instagram" aria-hidden="true"></i>
+                                    <span>Instagram</span>
+                                    <small>1080 × 1080</small>
+                                </div>
+                                <div class="platform-card linkedin-card" data-platform="linkedin" role="radio"
+                                    aria-checked="false" tabindex="0">
+                                    <i class="fab fa-linkedin" aria-hidden="true"></i>
+                                    <span>LinkedIn</span>
+                                    <small>1080 × 1080</small>
+                                </div>
+                                <div class="platform-card twitter-card" data-platform="twitter" role="radio"
+                                    aria-checked="false" tabindex="0">
+                                    <i class="fab fa-twitter" aria-hidden="true"></i>
+                                    <span>Twitter</span>
+                                    <small>1200 × 675</small>
+                                </div>
+                                <div class="platform-card presentation-card" data-platform="presentation" role="radio"
+                                    aria-checked="false" tabindex="0">
+                                    <i class="fas fa-desktop" aria-hidden="true"></i>
+                                    <span>Presentation</span>
+                                    <small>1920 × 1080</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide Count -->
+                    <div class="form-section">
+                        <div class="range-container">
+                            <label class="form-label" for="slide_count">
+                                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                                Number of Slides
+                            </label>
+                            <div class="range-wrapper">
+                                <input type="number" id="slide_count" name="slide_count" min="1" max="20" value="5"
+                                    class="slide-count-input" aria-describedby="slide-help">
+                                {% comment %} <div id="slide_count" name="slide_count">5</div> {% endcomment %}
+                            </div>
+                        </div>
+                        <div class="form-hint" id="slide-help">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i>
+                            Recommended: 3-10 slides for optimal engagement
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <div class="form-actions">
+                        <button type="submit" id="generateBtn" class="btn-generate" aria-describedby="generate-help">
+                            <i class="fas fa-magic" aria-hidden="true"></i>
+                            Generate AI Carousel
+                        </button>
+                        <div class="form-hint" id="generate-help">
+                            <i class="fas fa-clock" aria-hidden="true"></i>
+                            Generation typically takes 30-60 seconds
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Features List -->
+                <div class="features-list" role="region" aria-labelledby="features-title">
+                    <h4 id="features-title"><i class="fas fa-star" aria-hidden="true"></i> What you'll get:</h4>
+                    <ul role="list">
+                        <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> AI-generated professional
+                            content</li>
+                        <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Canva-style backgrounds</li>
+                        <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Platform-optimized
+                            dimensions</li>
+                        <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Brand-consistent design</li>
+                        <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Download-ready images</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Showcase -->
+        <section class="features-showcase" role="region" aria-labelledby="features-heading">
+            <div class="features-container">
+                <h2 class="section-title" id="features-heading">Why Choose Carousel Forge?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain" aria-hidden="true"></i>
+                        </div>
+                        <h3>AI-Powered Content</h3>
+                        <p>Generate engaging, professional content tailored to your brand and audience.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt" aria-hidden="true"></i>
+                        </div>
+                        <h3>Platform Optimized</h3>
+                        <p>Perfect dimensions and layouts for Instagram, LinkedIn, and more.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-palette" aria-hidden="true"></i>
+                        </div>
+                        <h3>Canva-Style Design</h3>
+                        <p>Beautiful, modern backgrounds with professional typography.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-clock" aria-hidden="true"></i>
+                        </div>
+                        <h3>Lightning Fast</h3>
+                        <p>Create complete carousels in minutes, not hours.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading" class="loading-overlay" style="display: none;" role="dialog" aria-modal="true"
+    aria-labelledby="loading-title" aria-describedby="loading-desc">
+    <div class="loading-card">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <h3 id="loading-title">Generating Your Carousel</h3>
+        <p id="loading-desc">Creating amazing content for you...</p>
+        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+            aria-label="Generation progress">
+            <div class="progress" aria-hidden="true"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function () {
+        // Smooth scrolling for navigation
+        $('.scroll-to-section').click(function (e) {
+            e.preventDefault();
+            const target = $($(this).attr('href'));
+            if (target.length) {
+                $('html, body').animate({
+                    scrollTop: target.offset().top - 100
+                }, 800);
+            }
+        });
+
+        $('.scroll-to-generator').click(function (e) {
+            e.preventDefault();
+            const target = $('#generatorPanel');
+            if (target.length) {
+                $('html, body').animate({
+                    scrollTop: target.offset().top - 100
+                }, 800);
+            }
+        });
+
+        // Platform selection with improved accessibility
+        $('.platform-card').click(function () {
+            $('.platform-card').removeClass('active').attr('aria-checked', 'false');
+            $(this).addClass('active').attr('aria-checked', 'true');
+            const platform = $(this).data('platform');
+            $('#platform').val(platform).trigger('change');
+        });
+
+        // Keyboard navigation for platform cards
+        $('.platform-card').keydown(function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                $(this).click();
+            }
+        });
+
+        // Update platform preview based on selection
+        $('#platform').change(function () {
+            const platform = $(this).val();
+            $('.platform-card').removeClass('active').attr('aria-checked', 'false');
+            $(`.platform-card[data-platform="${platform}"]`).addClass('active').attr('aria-checked', 'true');
+        });
+
+        // File upload handlers with preview
+        $('#profileImage').change(function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#profilePreview').html(`<img src="${e.target.result}" alt="Profile preview">`).show();
+                    $('#profilePreview').siblings('.upload-label').hide();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        $('#brandLogo').change(function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#logoPreview').html(`<img src="${e.target.result}" alt="Logo preview">`).show();
+                    $('#logoPreview').siblings('.upload-label').hide();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Click on preview to upload again
+        $(document).on('click', '#profilePreview, #logoPreview', function () {
+            const inputId = $(this).attr('id') === 'profilePreview' ? '#profileImage' : '#brandLogo';
+            $(inputId).click();
+        });
+
+        // Update slide count display
+        $('#slide_count').on('input change', function () {
+            $('#slideCount').text($(this).val());
+        });
+
+        // Form submission with enhanced validation
+        $('#carouselForm').submit(function (e) {
+            e.preventDefault();
+
+            const topic = $('#topic').val().trim();
+            if (!topic) {
+                toastr.error('Please enter your content description');
+                $('#topic').focus();
+                return;
+            }
+
+            if (topic.length < 10) {
+                toastr.error('Please provide more detailed content (at least 10 characters)');
+                $('#topic').focus();
+                return;
+            }
+
+            // Collect form data
+            const profileImageBase64 = $('#profilePreview img').attr('src');
+            const brandLogoBase64 = $('#logoPreview img').attr('src');
+
+            const formData = {
+                topic: topic,
+                platform: $('#platform').val(),
+                style: $('#style').val(),
+                slide_count: parseInt($('#slide_count').val()) || 5,
+                profile_image: profileImageBase64 || null,
+                brand_logo: brandLogoBase64 || null,
+                profile_handle: $('#profileHandle').val() || ''
+            };
+
+            // Show loading
+            $('#loading').fadeIn();
+            $('html, body').animate({ scrollTop: 0 }, 300);
+
+            // Generate carousel
+            $.ajax({
+                url: '/api/generate-carousel/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function (response) {
+                    if (response.success) {
+                        toastr.success('Carousel generated successfully!');
+                        setTimeout(function () {
+                            window.location.href = `/editor/${response.project_id}/`;
+                        }, 1000);
+                    } else {
+                        toastr.error(response.error || 'Generation failed');
+                        $('#loading').fadeOut();
+                    }
+                },
+                error: function (xhr) {
+                    try {
+                        const error = JSON.parse(xhr.responseText);
+                        toastr.error(error.error || 'An error occurred');
+                    } catch {
+                        toastr.error('Network error. Please try again.');
+                    }
+                    $('#loading').fadeOut();
+                }
+            });
+        });
+
+        // Initialize platform preview
+        $('#platform').trigger('change');
+
+        // Add loading animation
+        const progressBar = $('.progress');
+        let progress = 0;
+        const progressInterval = setInterval(function () {
+            if ($('#loading').is(':visible')) {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressBar.css('width', progress + '%');
+            } else {
+                clearInterval(progressInterval);
+            }
+        }, 500);
+    });
+</script>
+{% endblock %}
