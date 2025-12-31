@@ -92,6 +92,7 @@
             transform: rotate(360deg);
         }
     }
+
     /* ========== EDITOR LAYOUT ========== */
     .editor-container {
         display: grid;
@@ -1803,9 +1804,7 @@
                         readonly>
                     <div class="form-hint">This will be updated when you generate an image</div>
                 </div>
-                <button id="updateContent" class="btn btn-primary">
-                    <i class="fas fa-sync"></i> Update Slide
-                </button>
+                <!-- Update Slide button removed in favor of dynamic auto-save -->
                 <button id="regenerateSlide" class="btn btn-warning">
                     <i class="fas fa-robot"></i> Regenerate with AI
                 </button>
@@ -2022,8 +2021,13 @@
             this.scale = 1;
             this.autoSaveTimeout = null;
             this.isInitialized = false;
+        }
 
-            // Don't call init() here
+        debouncedSave() {
+            clearTimeout(this.autoSaveTimeout);
+            this.autoSaveTimeout = setTimeout(async () => {
+                await this.saveCurrentSlideContent();
+            }, 1000);
         }
 
         async initialize() {
@@ -2093,7 +2097,19 @@
                 console.log('API Response:', data);
 
                 if (data.success && data.slides && Array.isArray(data.slides)) {
-                    this.slides = data.slides;
+                    this.slides = data.slides.map(slide => {
+                        // Parse text_styles if string
+                        if (slide.text_styles && typeof slide.text_styles === 'string') {
+                            try {
+                                slide.text_styles = JSON.parse(slide.text_styles);
+                            } catch (e) {
+                                slide.text_styles = {};
+                            }
+                        } else if (!slide.text_styles) {
+                            slide.text_styles = {};
+                        }
+                        return slide;
+                    });
                     this.project = data.project; // Store project data
                     document.getElementById('totalSlides').textContent = this.slides.length;
 
@@ -2114,6 +2130,79 @@
                 console.error('Error loading slides:', error);
                 toastr.error('Failed to load slides: ' + error.message);
                 throw error;
+            }
+        }
+
+        async deleteSlide(index) {
+            const slide = this.slides[index];
+            if (!slide) return;
+
+            console.log('Delete requested for slide:', slide.id, index);
+
+            if (this.slides.length <= 1) {
+                toastr.error('Cannot delete the last slide');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete this slide?')) {
+                return;
+            }
+
+            // Save pending changes
+            if (this.autoSaveTimeout) {
+                clearTimeout(this.autoSaveTimeout);
+                await this.saveCurrentSlideContent();
+            }
+
+            try {
+                const response = await fetch('/api/delete-slide/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ slide_id: slide.id })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove from array
+                    this.slides.splice(index, 1);
+
+                    // Adjust current index
+                    if (this.currentSlide >= this.slides.length) {
+                        this.currentSlide = Math.max(0, this.slides.length - 1);
+                    } else if (this.currentSlide > index) {
+                        this.currentSlide--;
+                    }
+
+                    // Update UI counters
+                    // Update UI counters
+                    const totalSlidesEl = document.getElementById('totalSlides');
+                    if (totalSlidesEl) totalSlidesEl.textContent = this.slides.length;
+
+                    const currentSlideEl = document.getElementById('currentSlide');
+                    if (currentSlideEl) currentSlideEl.textContent = `Slide ${this.currentSlide + 1} of ${this.slides.length}`;
+
+                    // Re-render slides list
+                    this.renderSlidesList();
+
+                    // Re-render current slide
+                    if (this.slides.length > 0) {
+                        await this.renderSlide(this.currentSlide);
+                        this.updateUIControls(this.slides[this.currentSlide], this.currentSlide);
+                    } else {
+                        this.showEmptyState();
+                    }
+
+                    toastr.success('Slide deleted successfully');
+                } else {
+                    toastr.error(data.error || 'Failed to delete slide');
+                }
+            } catch (error) {
+                console.error('Error deleting slide:', error);
+                toastr.error('Failed to delete slide');
             }
         }
 
@@ -2193,100 +2282,9 @@
 
                 // Add delete button event listener
                 const deleteBtn = slideItem.querySelector('.delete-slide-btn');
-                deleteBtn.addEventListener('click', async (e) => {
+                deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation(); // Prevent triggering slide selection
-                    console.log('Delete button clicked for slide:', slide.id, index);
-
-                    if (editor.slides.length <= 1) {
-                        toastr.error('Cannot delete the last slide');
-                        return;
-                    }
-
-                    if (!confirm('Are you sure you want to delete this slide?')) {
-                        return;
-                    }
-
-                    // Save any pending changes before deleting
-                    if (editor.autoSaveTimeout) {
-                        clearTimeout(editor.autoSaveTimeout);
-                        await editor.saveCurrentSlideContent();
-                    }
-
-                    try {
-                        console.log('Fetching /api/delete-slide/ for slide:', slide.id);
-                        const response = await fetch('/api/delete-slide/', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCSRFToken()
-                            },
-                            body: JSON.stringify({
-                                slide_id: slide.id
-                            })
-                        });
-                        console.log('Delete response status:', response.status);
-                        const data = await response.json();
-                        console.log('Delete response data:', data);
-
-                        if (data.success) {
-                            console.log('✅ Delete slide API call successful');
-
-                            // Store the current slide index before deletion
-                            const deletedIndex = index;
-                            console.log('🗑️ Deleting slide at index:', deletedIndex);
-
-                            // Remove slide from local array
-                            editor.slides.splice(index, 1);
-                            console.log('✅ Slide removed from local array. Remaining slides:', editor.slides.length);
-
-                            // Adjust current slide index safely
-                            const oldCurrentSlide = editor.currentSlide;
-                            if (editor.currentSlide >= editor.slides.length) {
-                                editor.currentSlide = Math.max(0, editor.slides.length - 1);
-                            } else if (editor.currentSlide > deletedIndex) {
-                                // If we deleted a slide before the current one, adjust index
-                                editor.currentSlide = Math.max(0, editor.currentSlide - 1);
-                            }
-                            console.log('🔄 Current slide adjusted from', oldCurrentSlide, 'to', editor.currentSlide);
-
-                            // Update UI counters
-                            document.getElementById('totalSlides').textContent = editor.slides.length;
-                            document.getElementById('currentSlide').textContent = `Slide ${editor.currentSlide + 1} of ${editor.slides.length}`;
-
-                            // Re-render slides list
-                            console.log('🔄 Calling renderSlidesList...');
-                            editor.renderSlidesList();
-
-                            // Re-render current slide
-                            if (editor.slides.length > 0) {
-                                console.log('🎨 Calling renderSlide for current slide...');
-                                await editor.renderSlide(editor.currentSlide);
-                                console.log('📝 Calling updateUIControls...');
-                                editor.updateUIControls(editor.slides[editor.currentSlide], editor.currentSlide);
-                            } else {
-                                editor.showEmptyState();
-                            }
-
-                            // Force complete UI refresh
-                            setTimeout(() => {
-                                console.log('🔄 Force UI refresh...');
-                                editor.updateSlidesList();
-                                if (editor.slides.length > 0) {
-                                    editor.updateUIControls(editor.slides[editor.currentSlide], editor.currentSlide);
-                                }
-                                console.log('✅ UI refresh complete');
-                            }, 100);
-
-                            console.log('✅ Slide deleted successfully');
-                            toastr.success('Slide deleted successfully');
-                        } else {
-                            console.error('❌ Delete slide API returned error:', data.error);
-                            toastr.error(data.error || 'Failed to delete slide');
-                        }
-                    } catch (error) {
-                        console.error('Error deleting slide:', error);
-                        toastr.error('Failed to delete slide');
-                    }
+                    editor.deleteSlide(index);
                 });
 
                 slidesList.appendChild(slideItem);
@@ -2306,18 +2304,74 @@
             }
 
             const slide = this.slides[this.currentSlide];
-            const slideData = {
+
+            // 1. Gather Text Content from DOM (source of truth for text currently being edited)
+            const textData = {
                 title: document.getElementById('slideTitle')?.value || slide.title || '',
                 description: document.getElementById('slideDescription')?.value || slide.description || '',
                 extra_text: document.getElementById('slideExtraText')?.value || slide.extra_text || '',
                 image_prompt: document.getElementById('slideImagePrompt')?.value || slide.image_prompt || ''
             };
 
-            // Update local slide data
-            Object.assign(slide, slideData);
+            // 2. Identify current node positions from Konva Layer if possible
+            // (The dragend listener updates local slide state, but let's be sure)
+            if (this.layer) {
+                const titleNode = this.layer.findOne('.title');
+                if (titleNode) {
+                    slide.title_x = Math.round(titleNode.x());
+                    slide.title_y = Math.round(titleNode.y());
+                }
+                const descNode = this.layer.findOne('.description');
+                if (descNode) {
+                    slide.description_x = Math.round(descNode.x());
+                    slide.description_y = Math.round(descNode.y());
+                }
+                const extraNode = this.layer.findOne('.extraText');
+                if (extraNode) {
+                    slide.extra_text_x = Math.round(extraNode.x());
+                    slide.extra_text_y = Math.round(extraNode.y());
+                }
+            }
 
-            // Update slides list display
-            this.renderSlidesList();
+            // 3. Update local slide object with text data
+            Object.assign(slide, textData);
+
+            // 4. Construct Full Payload (Text + Styles + Position)
+            // We assume 'slide' object has been updated by other listeners (TextControls, ColorPickers)
+            const fullSlideData = {
+                title: slide.title,
+                description: slide.description,
+                extra_text: slide.extra_text,
+                image_prompt: slide.image_prompt,
+
+                // Styles
+                background_color: slide.background_color,
+                font_color: slide.font_color,
+                text_styles: slide.text_styles, // Send granular styles
+
+                // Canvas
+                canvas_width: slide.canvas_width,
+                canvas_height: slide.canvas_height,
+
+                // Positions
+                title_x: slide.title_x,
+                title_y: slide.title_y,
+                description_x: slide.description_x,
+                description_y: slide.description_y,
+                extra_text_x: slide.extra_text_x,
+                extra_text_y: slide.extra_text_y,
+
+                // Extra Style Props (if we start tracking them in the model)
+                // For now, these might be missing from the Django model if not added yet.
+                // But let's send what we have.
+            };
+
+            // Update slides list display to reflect title changes
+            const slideItem = document.querySelector(`.slide-item[data-index="${this.currentSlide}"]`);
+            if (slideItem) {
+                const titleEl = slideItem.querySelector('.slide-item-title');
+                if (titleEl) titleEl.textContent = slide.title || `Slide ${this.currentSlide + 1}`;
+            }
 
             try {
                 const response = await fetch('/api/update-slide/', {
@@ -2328,16 +2382,22 @@
                     },
                     body: JSON.stringify({
                         slide_id: slide.id,
-                        slide_data: slideData
+                        slide_data: fullSlideData
                     })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    console.log('Slide content auto-saved successfully');
-                    // Update local slide with server response
+                    // Update local slide with server response to sync IDs/urls etc
+                    // But be careful not to overwrite user's active cursor/focus if we re-render?
+                    // We just update data, don't re-render entire slide unless necessary.
                     Object.assign(slide, data.slide);
+                    // Ensure text_styles is parsed if it comes back as a string
+                    if (typeof slide.text_styles === 'string') {
+                        slide.text_styles = JSON.parse(slide.text_styles);
+                    }
+                    console.log('Slide auto-saved successfully');
                 } else {
                     console.error('Failed to auto-save slide content:', data.error);
                 }
@@ -2420,6 +2480,15 @@
             }
 
             const slide = this.slides[slideIndex];
+            // Ensure text_styles is an object
+            if (!slide.text_styles || typeof slide.text_styles === 'string') {
+                try {
+                    slide.text_styles = slide.text_styles ? JSON.parse(slide.text_styles) : {};
+                } catch (e) {
+                    console.error("Failed to parse text_styles, initializing as empty object:", e);
+                    slide.text_styles = {};
+                }
+            }
             console.log('🎨 Rendering slide:', slideIndex, 'Slide data:', slide);
 
             // Clear the layer
@@ -2614,6 +2683,9 @@
             // Add drag snapping
             this.addDragSnapping(title);
             this.addDragSnapping(description);
+            if (extraText) {
+                this.addDragSnapping(extraText);
+            }
 
             // Make text editable
             this.makeEditable(title, 'title');
@@ -2621,6 +2693,9 @@
             if (extraText) {
                 this.makeEditable(extraText, 'extraText');
             }
+            // Apply persisted styles
+            this.applyStoredStyles();
+
             console.log('✏️ Text editing enabled');
 
             // Update UI controls with slide data
@@ -2630,6 +2705,44 @@
             // Draw everything
             this.layer.batchDraw();
             console.log('✅ Slide rendered successfully');
+        }
+
+        applyStoredStyles() {
+            const slide = this.slides[this.currentSlide];
+            if (!slide || !slide.text_styles) return;
+
+            const styles = slide.text_styles;
+            const nodes = ['title', 'description', 'extraText'];
+
+            nodes.forEach(name => {
+                const nodeStyles = styles[name];
+                if (nodeStyles) {
+                    const node = this.layer.findOne('.' + name); // class selector if name used as class? or check name
+                    // Konva findOne('.name') works for name property
+                    if (node) {
+                        // Apply known style properties
+                        if (nodeStyles.fill) node.fill(nodeStyles.fill);
+                        if (nodeStyles.fontSize) node.fontSize(nodeStyles.fontSize);
+                        if (nodeStyles.fontFamily) node.fontFamily(nodeStyles.fontFamily);
+                        if (nodeStyles.fontStyle) node.fontStyle(nodeStyles.fontStyle);
+                        if (nodeStyles.align) node.align(nodeStyles.align);
+                        if (nodeStyles.lineHeight) node.lineHeight(nodeStyles.lineHeight);
+                        if (nodeStyles.letterSpacing) node.letterSpacing(nodeStyles.letterSpacing);
+                        if (nodeStyles.textTransform) {
+                            // Text transform is tricky as it modifies content, rely on stored content?
+                            // Actually we should store transform state if we want to reverse it
+                            // For now, apply it directly to the text content
+                            const originalText = node.text();
+                            switch (nodeStyles.textTransform) {
+                                case 'uppercase': node.text(originalText.toUpperCase()); break;
+                                case 'lowercase': node.text(originalText.toLowerCase()); break;
+                                case 'capitalize': node.text(originalText.replace(/\b\w/g, l => l.toUpperCase())); break;
+                            }
+                        }
+                    }
+                }
+            });
+            this.layer.batchDraw();
         }
 
         async loadImageAsBackground(imageUrl, width, height) {
@@ -2714,6 +2827,68 @@
                         console.warn(`Element with id '${field.id}' not found`);
                     }
                 });
+
+                // Update text style controls based on current slide's text_styles
+                const updateControl = (elementId, value, type = 'value') => {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        if (type === 'value') element.value = value;
+                        else if (type === 'activeClass') {
+                            // For button groups, remove active from all siblings and add to the one matching value
+                            const siblings = element.parentElement.querySelectorAll(`.${element.className.split(' ')[0]}`);
+                            siblings.forEach(sib => sib.classList.remove('active'));
+                            const targetButton = Array.from(siblings).find(btn => btn.getAttribute(element.dataset.attr) === value);
+                            if (targetButton) targetButton.classList.add('active');
+                        }
+                    }
+                };
+
+                const currentStyles = slide.text_styles || {};
+
+                // Title controls
+                const titleStyles = currentStyles.title || {};
+                updateControl('titleColor', titleStyles.fill || slide.font_color || '#000000');
+                updateControl('titleFontSize', titleStyles.fontSize || 48);
+                updateControl('titleFontFamily', titleStyles.fontFamily || 'Poppins');
+                // For font weight, we need to find the button with the correct data-weight
+                const titleWeightBtn = document.querySelector(`.title-weight-btn[data-weight="${titleStyles.fontStyle === 'bold' ? 'bold' : 'normal'}"]`);
+                if (titleWeightBtn) {
+                    document.querySelectorAll('.title-weight-btn').forEach(btn => btn.classList.remove('active'));
+                    titleWeightBtn.classList.add('active');
+                }
+                const titleAlignBtn = document.querySelector(`.title-alignment-btn[data-align="${titleStyles.align || 'center'}"]`);
+                if (titleAlignBtn) {
+                    document.querySelectorAll('.title-alignment-btn').forEach(btn => btn.classList.remove('active'));
+                    titleAlignBtn.classList.add('active');
+                }
+
+
+                // Description controls
+                const descriptionStyles = currentStyles.description || {};
+                updateControl('descriptionColor', descriptionStyles.fill || slide.font_color || '#000000');
+                updateControl('descriptionFontSize', descriptionStyles.fontSize || 24);
+                updateControl('descriptionFontFamily', descriptionStyles.fontFamily || 'Inter');
+                const descriptionWeightBtn = document.querySelector(`.description-weight-btn[data-weight="${descriptionStyles.fontStyle === 'bold' ? 'bold' : 'normal'}"]`);
+                if (descriptionWeightBtn) {
+                    document.querySelectorAll('.description-weight-btn').forEach(btn => btn.classList.remove('active'));
+                    descriptionWeightBtn.classList.add('active');
+                }
+                const descriptionAlignBtn = document.querySelector(`.description-alignment-btn[data-align="${descriptionStyles.align || 'center'}"]`);
+                if (descriptionAlignBtn) {
+                    document.querySelectorAll('.description-alignment-btn').forEach(btn => btn.classList.remove('active'));
+                    descriptionAlignBtn.classList.add('active');
+                }
+
+                // General text controls (assuming these apply to all text nodes, and we store them under 'all' or apply to each)
+                // For now, let's assume these are applied to 'title' and 'description' for UI display
+                updateControl('lineHeight', titleStyles.lineHeight || 1.2); // Default for title
+                updateControl('letterSpacing', titleStyles.letterSpacing || 0); // Default for title
+                const transformBtn = document.querySelector(`.transform-btn[data-transform="${titleStyles.textTransform || 'none'}"]`);
+                if (transformBtn) {
+                    document.querySelectorAll('.transform-btn').forEach(btn => btn.classList.remove('active'));
+                    transformBtn.classList.add('active');
+                }
+
 
                 console.log('Form fields updated:', {
                     title: slide.title,
@@ -2845,6 +3020,7 @@
         saveState() {
             // Save current state for undo/redo
             if (this.slides[this.currentSlide]) {
+                // Deep copy the slide to ensure text_styles is also copied
                 this.undoStack.push(JSON.stringify(this.slides[this.currentSlide]));
                 if (this.undoStack.length > 50) this.undoStack.shift();
                 this.redoStack = [];
@@ -2853,16 +3029,18 @@
 
         setupEventListeners() {
             // Navigation
-            document.getElementById('prevSlide').addEventListener('click', () => {
+            document.getElementById('prevSlide').addEventListener('click', async () => {
                 if (this.currentSlide > 0) {
+                    await this.saveCurrentSlideContent(); // Save current slide before navigating
                     this.currentSlide--;
                     this.renderSlide(this.currentSlide);
                     this.updateSlidesList();
                 }
             });
 
-            document.getElementById('nextSlide').addEventListener('click', () => {
+            document.getElementById('nextSlide').addEventListener('click', async () => {
                 if (this.currentSlide < this.slides.length - 1) {
+                    await this.saveCurrentSlideContent(); // Save current slide before navigating
                     this.currentSlide++;
                     this.renderSlide(this.currentSlide);
                     this.updateSlidesList();
@@ -2882,6 +3060,15 @@
             document.getElementById('fontColor').addEventListener('change', (e) => {
                 if (this.slides[this.currentSlide]) {
                     this.slides[this.currentSlide].font_color = e.target.value;
+                    // Also update text_styles for all text elements if they don't have specific overrides
+                    const slide = this.slides[this.currentSlide];
+                    if (!slide.text_styles) slide.text_styles = {};
+                    ['title', 'description', 'extraText'].forEach(target => {
+                        if (!slide.text_styles[target] || !slide.text_styles[target].fill) {
+                            if (!slide.text_styles[target]) slide.text_styles[target] = {};
+                            slide.text_styles[target].fill = e.target.value;
+                        }
+                    });
                     this.renderSlide(this.currentSlide);
                     toastr.info('Font color updated');
                 }
@@ -2895,7 +3082,22 @@
                     textNodes.forEach(node => {
                         node.fontFamily(e.target.value);
                     });
+
+                    // Update local state
+                    if (this.slides[this.currentSlide]) {
+                        // This is a general font family, so it should update the default or specific if not overridden
+                        const slide = this.slides[this.currentSlide];
+                        if (!slide.text_styles) slide.text_styles = {};
+                        ['title', 'description', 'extraText'].forEach(target => {
+                            if (!slide.text_styles[target] || !slide.text_styles[target].fontFamily) {
+                                if (!slide.text_styles[target]) slide.text_styles[target] = {};
+                                slide.text_styles[target].fontFamily = e.target.value;
+                            }
+                        });
+                    }
+
                     this.layer.batchDraw();
+                    this.debouncedSave();
                     toastr.info('Font family updated');
                 }
             });
@@ -2905,10 +3107,16 @@
                     const layout = e.target.value;
                     const title = this.layer.findOne('.title');
                     const description = this.layer.findOne('.description');
+                    const extraText = this.layer.findOne('.extraText');
 
                     if (title && description) {
                         const width = this.stage.width();
                         const height = this.stage.height();
+
+                        // Reset offsets for accurate positioning
+                        title.offsetX(0);
+                        description.offsetX(0);
+                        if (extraText) extraText.offsetX(0);
 
                         switch (layout) {
                             case 'centered':
@@ -2916,89 +3124,67 @@
                                 title.y(height / 3 - 40);
                                 description.x(width / 2);
                                 description.y(height / 2 + 20);
+                                if (extraText) {
+                                    extraText.x(width / 2);
+                                    extraText.y(height / 2 + 80);
+                                }
                                 break;
                             case 'left':
                                 title.x(width * 0.1);
                                 title.y(height / 3 - 40);
                                 description.x(width * 0.1);
                                 description.y(height / 2 + 20);
+                                if (extraText) {
+                                    extraText.x(width * 0.1);
+                                    extraText.y(height / 2 + 80);
+                                }
                                 break;
                             case 'split':
                                 title.x(width * 0.1);
                                 title.y(height / 3);
                                 description.x(width * 0.6);
                                 description.y(height / 3);
+                                if (extraText) {
+                                    extraText.x(width * 0.1); // Or adjust based on split layout
+                                    extraText.y(height / 3 + 100);
+                                }
                                 break;
                             case 'top':
                                 title.x(width / 2);
                                 title.y(height * 0.2);
                                 description.x(width / 2);
                                 description.y(height * 0.4);
+                                if (extraText) {
+                                    extraText.x(width / 2);
+                                    extraText.y(height * 0.6);
+                                }
                                 break;
                         }
 
+                        // Re-apply center offsets if needed for alignment
                         title.offsetX(title.width() / 2);
                         description.offsetX(description.width() / 2);
+                        if (extraText) extraText.offsetX(extraText.width() / 2);
+
+                        // Update local slide state with new positions
+                        const slide = this.slides[this.currentSlide];
+                        slide.title_x = Math.round(title.x());
+                        slide.title_y = Math.round(title.y());
+                        slide.description_x = Math.round(description.x());
+                        slide.description_y = Math.round(description.y());
+                        if (extraText) {
+                            slide.extra_text_x = Math.round(extraText.x());
+                            slide.extra_text_y = Math.round(extraText.y());
+                        }
+
                         this.layer.batchDraw();
+                        this.debouncedSave(); // Save layout changes
                         toastr.info('Layout updated');
                     }
                 }
             });
 
-            // Content update
-            document.getElementById('updateContent').addEventListener('click', async () => {
-                if (this.slides[this.currentSlide]) {
-                    const slide = this.slides[this.currentSlide];
-
-                    // Update via API
-                    try {
-                        const response = await fetch('/api/update-slide/', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCSRFToken()
-                            },
-                            body: JSON.stringify({
-                                slide_id: slide.id,
-                                slide_data: {
-                                    title: document.getElementById('slideTitle').value,
-                                    description: document.getElementById('slideDescription').value,
-                                    extra_text: document.getElementById('slideExtraText').value,
-                                    image_prompt: document.getElementById('slideImagePrompt').value,
-                                    background_color: document.getElementById('bgColor').value,
-                                    description: document.getElementById('slideDescription').value,
-                                    extra_text: document.getElementById('slideExtraText').value,
-                                    image_prompt: document.getElementById('slideImagePrompt').value,
-                                    background_color: document.getElementById('bgColor').value,
-                                    font_color: document.getElementById('fontColor').value,
-
-                                    // Preserve coordinates
-                                    title_x: slide.title_x,
-                                    title_y: slide.title_y,
-                                    description_x: slide.description_x,
-                                    description_y: slide.description_y,
-                                    extra_text_x: slide.extra_text_x,
-                                    extra_text_y: slide.extra_text_y
-                                }
-                            })
-                        });
-
-                        const data = await response.json();
-                        if (data.success) {
-                            // Update local slide data with server response
-                            Object.assign(slide, data.slide);
-                            this.renderSlide(this.currentSlide);
-                            this.renderSlidesList();
-                            toastr.success('Slide content updated');
-                        } else {
-                            toastr.error(data.error || 'Failed to update slide');
-                        }
-                    } catch (error) {
-                        console.error('Error updating slide:', error);
-                        toastr.error('Failed to update slide');
-                    }
-                }
-            });
+            // Content update listener removed - now handled dynamically
 
             // Regenerate slide with AI
             document.getElementById('regenerateSlide').addEventListener('click', async () => {
@@ -3030,6 +3216,10 @@
                     if (data.success) {
                         // Update slide with new content
                         Object.assign(slide, data.slide);
+                        // Ensure text_styles is parsed if it comes back as a string
+                        if (typeof slide.text_styles === 'string') {
+                            slide.text_styles = JSON.parse(slide.text_styles);
+                        }
                         this.renderSlide(this.currentSlide);
                         this.renderSlidesList();
                         toastr.success('Slide regenerated with AI!');
@@ -3122,6 +3312,7 @@
                                     image_prompt: slide.image_prompt,
                                     background_color: slide.background_color,
                                     font_color: slide.font_color,
+                                    text_styles: slide.text_styles, // Include text_styles
 
                                     // Add coordinates
                                     title_x: slide.title_x,
@@ -3176,7 +3367,8 @@
                                         description: slide.description,
                                         image_prompt: slide.image_prompt,
                                         background_color: slide.background_color,
-                                        font_color: slide.font_color
+                                        font_color: slide.font_color,
+                                        text_styles: slide.text_styles // Include text_styles
                                     }
                                 })
                             });
@@ -3227,6 +3419,10 @@
                     const previousState = this.undoStack.pop();
                     this.redoStack.push(JSON.stringify(this.slides[this.currentSlide]));
                     this.slides[this.currentSlide] = JSON.parse(previousState);
+                    // Ensure text_styles is parsed after undo
+                    if (typeof this.slides[this.currentSlide].text_styles === 'string') {
+                        this.slides[this.currentSlide].text_styles = JSON.parse(this.slides[this.currentSlide].text_styles);
+                    }
                     this.renderSlide(this.currentSlide);
                     this.renderSlidesList();
                     toastr.info('Undo applied');
@@ -3238,51 +3434,115 @@
                     const nextState = this.redoStack.pop();
                     this.undoStack.push(JSON.stringify(this.slides[this.currentSlide]));
                     this.slides[this.currentSlide] = JSON.parse(nextState);
+                    // Ensure text_styles is parsed after redo
+                    if (typeof this.slides[this.currentSlide].text_styles === 'string') {
+                        this.slides[this.currentSlide].text_styles = JSON.parse(this.slides[this.currentSlide].text_styles);
+                    }
                     this.renderSlide(this.currentSlide);
                     this.renderSlidesList();
                     toastr.info('Redo applied');
                 }
             });
 
-            // Auto-save slide content when fields change
-            const autoSaveFields = ['slideTitle', 'slideDescription', 'slideExtraText', 'slideImagePrompt'];
-            autoSaveFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.addEventListener('input', (e) => {
-                        // Debounce auto-save
-                        clearTimeout(this.autoSaveTimeout);
-                        this.autoSaveTimeout = setTimeout(async () => {
-                            await this.saveCurrentSlideContent();
-                        }, 1000); // Save after 1 second of no typing
-                    });
+            // Auto-save slide content and dynamic update
+            const textFields = [
+                { id: 'slideTitle', target: 'title' },
+                { id: 'slideDescription', target: 'description' },
+                { id: 'slideExtraText', target: 'extraText' }
+            ];
 
-                    field.addEventListener('blur', async (e) => {
-                        // Save immediately on blur (when user leaves the field)
-                        clearTimeout(this.autoSaveTimeout);
-                        await this.saveCurrentSlideContent();
+            textFields.forEach(field => {
+                const element = document.getElementById(field.id);
+                if (element) {
+                    element.addEventListener('input', (e) => {
+                        const newVal = e.target.value;
+
+                        // 1. Update local state immediately
+                        if (this.slides[this.currentSlide]) {
+                            if (field.target === 'title') this.slides[this.currentSlide].title = newVal;
+                            if (field.target === 'description') this.slides[this.currentSlide].description = newVal;
+                            if (field.target === 'extraText') this.slides[this.currentSlide].extra_text = newVal;
+                        }
+
+                        // 2. Update Canvas immediately
+                        if (this.layer) {
+                            const node = this.layer.findOne(`.${field.target}`);
+                            // Also try name selector if class selector fails (Konva names are not classes)
+                            const nodeByName = this.layer.findOne(`.${field.target}`);
+
+                            if (nodeByName) {
+                                let textToDisplay = newVal;
+                                // Apply transform if exists in styles
+                                if (this.slides[this.currentSlide].text_styles &&
+                                    this.slides[this.currentSlide].text_styles[field.target] &&
+                                    this.slides[this.currentSlide].text_styles[field.target].textTransform) {
+                                    const transform = this.slides[this.currentSlide].text_styles[field.target].textTransform;
+                                    if (transform === 'uppercase') textToDisplay = newVal.toUpperCase();
+                                    else if (transform === 'lowercase') textToDisplay = newVal.toLowerCase();
+                                    else if (transform === 'capitalize') textToDisplay = newVal.replace(/\b\w/g, l => l.toUpperCase());
+                                }
+                                nodeByName.text(textToDisplay);
+                                this.layer.batchDraw();
+                            } else {
+                                // Provide fallback if the specific node isn't found (e.g. extraText might not exist yet)
+                                // If extraText node doesn't exist but we define it, we might need to re-render.
+                                // But for performance, let's just try to update via renderSlide for now if node missing
+                                // or just wait for debounce save?
+                                // Let's rely on renderSlide if node is missing (new text added).
+                                // But reusing renderSlide kills input focus? NO, input is outside canvas.
+                                // So renderSlide is safe.
+                                if (field.target === 'extraText' && !nodeByName) {
+                                    this.renderSlide(this.currentSlide);
+                                }
+                            }
+                        }
+
+                        // 3. Update Sidebar List Preview (Throttled?)
+                        // We can just update it.
+                        // Find the slide item title
+                        const slideItem = document.querySelector(`.slide-item[data-index="${this.currentSlide}"]`);
+                        if (slideItem) {
+                            if (field.target === 'title') {
+                                const titleEl = slideItem.querySelector('.slide-item-title');
+                                if (titleEl) titleEl.textContent = newVal || `Slide ${this.currentSlide + 1}`;
+                            }
+                        }
+
+
+                        // 4. Debounce auto-save to backend
+                        this.debouncedSave();
                     });
                 }
             });
 
+            // Specific handler for Image Prompt (no canvas update needed, just save)
+            const promptField = document.getElementById('slideImagePrompt');
+            if (promptField) {
+                promptField.addEventListener('input', (e) => {
+                    if (this.slides[this.currentSlide]) {
+                        this.slides[this.currentSlide].image_prompt = e.target.value;
+                    }
+                    this.debouncedSave();
+                });
+            }
+
             // Add slide button
             document.getElementById('addSlide').addEventListener('click', async () => {
-                console.log('Add slide button clicked');
-                if (!this.projectId) {
-                    console.log('No project ID');
-                    toastr.error('No project loaded');
-                    return;
-                }
+                const addSlideBtn = document.getElementById('addSlide');
+                addSlideBtn.disabled = true;
 
-                // Save any pending changes before adding new slide
-                if (this.autoSaveTimeout) {
-                    clearTimeout(this.autoSaveTimeout);
-                    await this.saveCurrentSlideContent();
-                }
-
-                console.log('Making API call to add slide');
                 try {
-                    console.log('Fetching /api/add-slide/');
+                    if (!this.projectId) {
+                        toastr.error('No project loaded');
+                        return;
+                    }
+
+                    // Save any pending changes
+                    if (this.autoSaveTimeout) {
+                        clearTimeout(this.autoSaveTimeout);
+                        await this.saveCurrentSlideContent();
+                    }
+
                     const response = await fetch('/api/add-slide/', {
                         method: 'POST',
                         headers: {
@@ -3293,54 +3553,47 @@
                             project_id: this.projectId
                         })
                     });
-                    console.log('Response status:', response.status);
+
                     const data = await response.json();
-                    console.log('Response data:', data);
 
                     if (data.success) {
-                        console.log('✅ Add slide API call successful');
-                        console.log('New slide data:', data.slide);
-
-                        // Add the new slide to local array
+                        // Add to local state
+                        // Ensure text_styles is parsed if it comes back as a string
+                        if (typeof data.slide.text_styles === 'string') {
+                            data.slide.text_styles = JSON.parse(data.slide.text_styles);
+                        }
                         this.slides.push(data.slide);
                         this.currentSlide = this.slides.length - 1;
 
-                        console.log('✅ Slide added to local array. Total slides:', this.slides.length);
-                        console.log('✅ Current slide index set to:', this.currentSlide);
-
                         // Update UI counters
-                        document.getElementById('totalSlides').textContent = this.slides.length;
-                        document.getElementById('currentSlide').textContent = `Slide ${this.currentSlide + 1} of ${this.slides.length}`;
+                        // Update UI counters
+                        const totalSlidesEl = document.getElementById('totalSlides');
+                        if (totalSlidesEl) totalSlidesEl.textContent = this.slides.length;
 
-                        // Update slides list first
-                        console.log('🔄 Calling renderSlidesList...');
+                        const currentSlideEl = document.getElementById('currentSlide');
+                        if (currentSlideEl) currentSlideEl.textContent = `Slide ${this.currentSlide + 1} of ${this.slides.length}`;
+
+                        // Force immediate list update
                         this.renderSlidesList();
 
-                        // Render the new slide in the canvas
-                        console.log('🎨 Calling renderSlide for new slide...');
-                        await this.renderSlide(this.currentSlide);
+                        // Try to render canvas, but don't fail entire operation if it errors
+                        try {
+                            await this.renderSlide(this.currentSlide);
+                            this.updateUIControls(data.slide, this.currentSlide);
+                        } catch (renderError) {
+                            console.error('Error rendering new slide canvas:', renderError);
+                            toastr.warning('Slide added but preview might be incomplete');
+                        }
 
-                        // Update the edit panel with new slide data
-                        console.log('📝 Calling updateUIControls...');
-                        this.updateUIControls(data.slide, this.currentSlide);
-
-                        // Force a complete UI refresh to ensure everything is in sync
-                        setTimeout(() => {
-                            console.log('🔄 Force UI refresh...');
-                            this.updateSlidesList();
-                            this.updateUIControls(this.slides[this.currentSlide], this.currentSlide);
-                            console.log('✅ UI refresh complete');
-                        }, 100);
-
-                        console.log('✅ New slide added successfully');
                         toastr.success('New slide added');
                     } else {
-                        console.error('❌ Add slide API returned error:', data.error);
                         toastr.error(data.error || 'Failed to add slide');
                     }
                 } catch (error) {
                     console.error('Error adding slide:', error);
                     toastr.error('Failed to add slide');
+                } finally {
+                    addSlideBtn.disabled = false;
                 }
             });
 
@@ -3458,21 +3711,12 @@
                     }
 
                     this.saveState();
+                    this.debouncedSave(); // Save position changes
                 }
             });
 
             node.on('dragmove', () => {
-                const gridSize = 20;
-                // Snap logic removed as per grid removal request, but keeping bounds check
-
-                // Keep within bounds
-                const width = this.stage.width();
-                const height = this.stage.height();
-
-                if (node.x() < 0) node.x(0);
-                if (node.y() < 0) node.y(0);
-                if (node.x() + node.width() > width) node.x(width - node.width());
-                if (node.y() + node.height() > height) node.y(height - node.height());
+                // No boundary checks - allow free movement
             });
         }
 
@@ -3659,17 +3903,35 @@
             const layer = this.editor.layer;
             let textsToUpdate = [];
 
-            if (target === 'title') {
-                textsToUpdate = layer.find('.title');
-            } else if (target === 'description') {
-                textsToUpdate = layer.find('.description');
-            } else if (target === 'all') {
-                textsToUpdate = layer.find('Text');
+            // Determine targets
+            if (target === 'all') {
+                // If targeting all, we update all relevant nodes
+                // But for storage, we must act on 'title', 'description', etc separately
+                ['title', 'description', 'extraText'].forEach(t => this.updateTextProperty(t, property, value));
+                return;
+            } else {
+                // Try to find by name selector (Konva uses .name)
+                const node = layer.findOne('.' + target);
+                if (node) textsToUpdate.push(node);
             }
 
             if (textsToUpdate.length === 0) {
-                console.warn(`No text objects found for target: ${target}`);
-                return;
+                // console.warn(`No text objects found for target: ${target}`);
+                return; // Might be extraText missing
+            }
+
+            // Update local state text_styles
+            const slide = this.editor.slides[this.editor.currentSlide];
+            if (slide) {
+                if (!slide.text_styles) slide.text_styles = {};
+                if (!slide.text_styles[target]) slide.text_styles[target] = {};
+
+                // Map generic property to specific style
+                if (property === 'fontWeight') {
+                    slide.text_styles[target].fontStyle = (value === 'bold' ? 'bold' : 'normal');
+                } else {
+                    slide.text_styles[target][property] = value;
+                }
             }
 
             textsToUpdate.forEach((text, index) => {
@@ -3679,32 +3941,25 @@
                     } else if (property === 'align') {
                         text.align(value);
                     } else if (property === 'textTransform') {
-                        const originalText = text.text();
+                        // Visual update only for transform? Or permanent?
+                        // Simple toggle for now
+                        const originalText = text.text(); // Wait, this changes the text content!
+                        // If we change content, we should update the 'title'/'description' field too?
+                        // Complex. Let's just apply it.
                         switch (value) {
-                            case 'uppercase':
-                                text.text(originalText.toUpperCase());
-                                break;
-                            case 'lowercase':
-                                text.text(originalText.toLowerCase());
-                                break;
-                            case 'capitalize':
-                                text.text(originalText.replace(/\b\w/g, l => l.toUpperCase()));
-                                break;
-                            default:
-                                text.text(originalText);
+                            case 'uppercase': text.text(text.text().toUpperCase()); break;
+                            case 'lowercase': text.text(text.text().toLowerCase()); break;
                         }
                     } else if (typeof text[property] === 'function') {
                         text[property](value);
-                    } else {
-                        console.warn(`Property ${property} not available on text object`);
                     }
                 } catch (error) {
                     console.error(`Error updating text property ${property}:`, error);
                 }
             });
 
-            layer.draw();
-            this.editor.saveCurrentSlideContent();
+            layer.batchDraw();
+            this.editor.debouncedSave();
         }
     }
 

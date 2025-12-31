@@ -246,7 +246,6 @@
                             <div class="range-wrapper">
                                 <input type="number" id="slide_count" name="slide_count" min="1" max="20" value="5"
                                     class="slide-count-input" aria-describedby="slide-help">
-                                {% comment %} <div id="slide_count" name="slide_count">5</div> {% endcomment %}
                             </div>
                         </div>
                         <div class="form-hint" id="slide-help">
@@ -416,11 +415,6 @@
             $(inputId).click();
         });
 
-        // Update slide count display
-        $('#slide_count').on('input change', function () {
-            $('#slideCount').text($(this).val());
-        });
-
         // Form submission with enhanced validation
         $('#carouselForm').submit(function (e) {
             e.preventDefault();
@@ -477,11 +471,14 @@
                     }
                 },
                 error: function (xhr) {
+                    // Only show error if it's a JSON error from the server
                     try {
                         const error = JSON.parse(xhr.responseText);
-                        toastr.error(error.error || 'An error occurred');
+                        if (error.error) {
+                            toastr.error(error.error);
+                        }
                     } catch {
-                        toastr.error('Network error. Please try again.');
+                        // Don't show network error message, just hide the loading spinner
                     }
                     $('#loading').fadeOut();
                 }
@@ -493,16 +490,30 @@
 
         // Add loading animation
         const progressBar = $('.progress');
-        let progress = 0;
-        const progressInterval = setInterval(function () {
-            if ($('#loading').is(':visible')) {
-                progress += Math.random() * 15;
-                if (progress > 90) progress = 90;
-                progressBar.css('width', progress + '%');
-            } else {
-                clearInterval(progressInterval);
-            }
-        }, 500);
+        let progressInterval;
+
+        // Function to start progress animation
+        function startProgressAnimation() {
+            if (progressInterval) clearInterval(progressInterval);
+            progressBar.css('width', '0%');
+
+            progressInterval = setInterval(function () {
+                if ($('#loading').is(':visible')) {
+                    let currentWidth = parseInt(progressBar.css('width'));
+                    if (isNaN(currentWidth)) currentWidth = 0;
+                    let newWidth = currentWidth + Math.random() * 15;
+                    if (newWidth > 90) newWidth = 90;
+                    progressBar.css('width', newWidth + '%');
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 500);
+        }
+
+        // Start animation when loading is shown
+        $(document).on('ajaxSend', function () {
+            startProgressAnimation();
+        });
     });
 </script>
 {% endblock %}

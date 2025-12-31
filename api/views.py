@@ -71,6 +71,7 @@ def editor(request, project_id=None):
                     'canvas_height': slide.canvas_height,
                     'generated_image': slide.generated_image,
                     'extra_text': slide.extra_text,
+                    'text_styles': slide.text_styles, # Pass styles to frontend
                     'title_x': slide.title_x,
                     'title_y': slide.title_y,
                     'description_x': slide.description_x,
@@ -932,6 +933,14 @@ def update_slide(request):
             # Additional Fields
             if 'extra_text' in slide_data:
                 slide.extra_text = slide_data['extra_text']
+            
+            if 'text_styles' in slide_data:
+                # Ensure it's stored as string
+                styles = slide_data['text_styles']
+                if isinstance(styles, dict):
+                    slide.text_styles = json.dumps(styles)
+                else:
+                    slide.text_styles = styles
             
             slide.save()
             

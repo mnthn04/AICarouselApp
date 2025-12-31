@@ -40,6 +40,9 @@ class Slide(models.Model):
     extra_text_x = models.IntegerField(blank=True, null=True)
     extra_text_y = models.IntegerField(blank=True, null=True)
     
+    # Store granular text styles (JSON string)
+    text_styles = models.TextField(blank=True, default='{}')
+    
     generated_image = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)  # Use default instead of auto_now_add
     updated_at = models.DateTimeField(auto_now=True)
