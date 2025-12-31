@@ -173,6 +173,28 @@
         gap: var(--spacing-md);
         margin-bottom: var(--spacing-xl);
         flex: 1;
+        max-height: 750px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .slides-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .slides-list::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+    }
+
+    .slides-list::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        transition: background var(--transition-fast);
+    }
+
+    .slides-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
     }
 
     .slide-item {
@@ -184,6 +206,8 @@
         transition: all var(--transition-normal);
         position: relative;
         overflow: hidden;
+        flex-shrink: 0;
+        /* Prevent shrinking when list scrollbar activates */
     }
 
     .slide-item::before {
@@ -1779,14 +1803,161 @@
         <div class="properties-content">
             <div class="properties-section">
                 <h5>Slide Details</h5>
-                <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" id="slideTitle" placeholder="Slide title" class="form-control">
+                <div class="form-group mb-4">
+                    <label class="form-label fw-bold">Title</label>
+                    <input type="text" id="slideTitle" placeholder="Enter title" class="form-control">
+
+                    <button class="btn btn-light btn-sm w-100 mt-1 text-muted border-0" type="button"
+                        onclick="toggleControls('titleControlsPanel', this)"
+                        style="border-radius: 0 0 6px 6px; font-size: 0.8rem;">
+                        <i class="fas fa-sliders-h me-1"></i> Edit Styles <i class="fas fa-chevron-down ms-1"></i>
+                    </button>
+
+                    <!-- Title Controls (Collapsible) -->
+                    <div id="titleControlsPanel"
+                        class="control-group mt-2 ps-2 pe-2 border-start border-3 border-primary"
+                        style="display:none; background: #fff;">
+
+                        <div class="d-flex align-items-center justify-content-between mb-3 pt-2">
+                            <label class="small text-muted mb-0">Color</label>
+                            <input type="color" id="titleColor" class="form-control form-control-color shadow-sm"
+                                value="#000000" title="Choose color" style="width: 60px;">
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <label class="small text-muted">Size</label>
+                                <span class="small text-muted" id="titleFontSizeDisplay">32px</span>
+                            </div>
+                            <input type="range" id="titleFontSize" min="16" max="72" value="32" step="2"
+                                class="form-range"
+                                oninput="document.getElementById('titleFontSizeDisplay').textContent = this.value + 'px'">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted mb-1 d-block">Font Family</label>
+                            <select id="titleFontFamily" class="form-select form-select-sm shadow-sm">
+                                <option value="Arial">Arial</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Poppins" selected>Poppins</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted mb-1 d-block">Style</label>
+                            <div class="btn-group w-100 shadow-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm title-weight-btn"
+                                    data-weight="bold"><i class="fas fa-bold"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm title-style-btn"
+                                    data-style="italic"><i class="fas fa-italic"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm title-decoration-btn"
+                                    data-decoration="underline"><i class="fas fa-underline"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="mb-2 pb-2">
+                            <label class="small text-muted mb-1 d-block">Alignment</label>
+                            <div class="alignment-buttons btn-group w-100 shadow-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm title-alignment-btn"
+                                    data-align="left">
+                                    <i class="fas fa-align-left"></i>
+                                </button>
+                                <button type="button"
+                                    class="btn btn-outline-secondary btn-sm title-alignment-btn active"
+                                    data-align="center">
+                                    <i class="fas fa-align-center"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm title-alignment-btn"
+                                    data-align="right">
+                                    <i class="fas fa-align-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="slideDescription" placeholder="Slide description" rows="3"
+                <div class="form-group mb-4">
+                    <label class="form-label fw-bold">Description</label>
+                    <textarea id="slideDescription" placeholder="Enter description" rows="3"
                         class="form-control"></textarea>
+
+                    <button class="btn btn-light btn-sm w-100 mt-1 text-muted border-0" type="button"
+                        onclick="toggleControls('descriptionControlsPanel', this)"
+                        style="border-radius: 0 0 6px 6px; font-size: 0.8rem;">
+                        <i class="fas fa-sliders-h me-1"></i> Edit Styles <i class="fas fa-chevron-down ms-1"></i>
+                    </button>
+
+                    <!-- Description Controls (Collapsible) -->
+                    <div id="descriptionControlsPanel"
+                        class="control-group mt-2 ps-2 pe-2 border-start border-3 border-secondary"
+                        style="display:none; background: #fff;">
+
+                        <div class="d-flex align-items-center justify-content-between mb-3 pt-2">
+                            <label class="small text-muted mb-0">Color</label>
+                            <input type="color" id="descriptionColor" class="form-control form-control-color shadow-sm"
+                                value="#333333" style="width: 60px;">
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <label class="small text-muted">Size</label>
+                                <span class="small text-muted" id="descriptionFontSizeDisplay">18px</span>
+                            </div>
+                            <input type="range" id="descriptionFontSize" min="12" max="48" value="18" step="1"
+                                class="form-range"
+                                oninput="document.getElementById('descriptionFontSizeDisplay').textContent = this.value + 'px'">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted mb-1 d-block">Font Family</label>
+                            <select id="descriptionFontFamily" class="form-select form-select-sm shadow-sm">
+                                <option value="Arial">Arial</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Poppins" selected>Poppins</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted mb-1 d-block">Style</label>
+                            <div class="btn-group w-100 shadow-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm description-weight-btn"
+                                    data-weight="bold"><i class="fas fa-bold"></i></button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm description-style-btn"
+                                    data-style="italic"><i class="fas fa-italic"></i></button>
+                                <button type="button"
+                                    class="btn btn-outline-secondary btn-sm description-decoration-btn"
+                                    data-decoration="underline"><i class="fas fa-underline"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="mb-2 pb-2">
+                            <label class="small text-muted mb-1 d-block">Alignment</label>
+                            <div class="alignment-buttons btn-group w-100 shadow-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm description-alignment-btn"
+                                    data-align="left">
+                                    <i class="fas fa-align-left"></i>
+                                </button>
+                                <button type="button"
+                                    class="btn btn-outline-secondary btn-sm description-alignment-btn active"
+                                    data-align="center">
+                                    <i class="fas fa-align-center"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm description-alignment-btn"
+                                    data-align="right">
+                                    <i class="fas fa-align-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Extra Text</label>
@@ -1795,227 +1966,152 @@
                         <i class="fas fa-plus"></i> Add Text Block
                     </button>
                     <div class="form-hint">Double click text on canvas to edit content</div>
-                </div>
-                <div class="form-group">
-                    <label>Image Prompt</label>
-                    <textarea id="slideImagePrompt" placeholder="Describe the background image" rows="2"
-                        class="form-control"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Generated Image URL</label>
-                    <input type="text" id="generatedImageUrl" placeholder="No image generated yet" class="form-control"
-                        readonly>
-                    <div class="form-hint">This will be updated when you generate an image</div>
-                </div>
-                <!-- Update Slide button removed in favor of dynamic auto-save -->
-                <button id="regenerateSlide" class="btn btn-warning">
-                    <i class="fas fa-robot"></i> Regenerate with AI
-                </button>
-            </div>
 
-            <div class="properties-section">
-                <h5>Canvas Settings</h5>
-                <div class="form-group">
-                    <label>Width (px)</label>
-                    <input type="number" id="canvasWidth" placeholder="1080" class="form-control" min="100" max="4000">
-                </div>
-                <div class="form-group">
-                    <label>Height (px)</label>
-                    <input type="number" id="canvasHeight" placeholder="1080" class="form-control" min="100" max="4000">
-                </div>
-                <button id="updateCanvasSize" class="btn btn-secondary">
-                    <i class="fas fa-expand"></i> Update Canvas
-                </button>
-            </div>
+                    <!-- Selected Text Controls (Dynamic) -->
+                    <!-- Selected Text Controls (Dynamic) -->
+                    <div id="selectedTextControls" class="form-group mb-4" style="display:none;">
+                        <button id="selectedTextToggleBtn"
+                            class="btn btn-light btn-sm w-100 mt-1 text-muted border-0 text-start text-truncate"
+                            type="button" onclick="toggleControls('selectedControlsPanel', this)"
+                            style="border-radius: 6px; font-size: 0.8rem;">
+                            <i class="fas fa-sliders-h me-1"></i> <span id="selectedTextLabel">Selected Text</span> <i
+                                class="fas fa-chevron-down float-end mt-1"></i>
+                        </button>
 
-            <!-- Text Controls Section -->
-            <div class="text-controls-section">
-                <h4><i class="fas fa-font"></i> Text Controls</h4>
+                        <div id="selectedControlsPanel"
+                            class="control-group mt-2 ps-2 pe-2 border-start border-3 border-danger"
+                            style="display:none; background: #fff;">
 
-                <!-- Selected Text Controls (Dynamic) -->
-                <div class="control-group" id="selectedTextControls"
-                    style="display:none; background: rgba(99, 102, 241, 0.05); border: 1px solid var(--primary);">
-                    <h5 style="color: var(--primary);"><i class="fas fa-mouse-pointer"></i> Selected Text</h5>
-                    <div class="control-row">
-                        <div class="control-item">
-                            <label>Color</label>
-                            <input type="color" id="selectedColor" value="#000000">
-                        </div>
-                        <div class="control-item">
-                            <label>Size</label>
-                            <input type="range" id="selectedFontSize" min="12" max="120" value="24" step="1">
-                        </div>
-                    </div>
-                    <div class="control-row">
-                        <div class="control-item">
-                            <label>Font Family</label>
-                            <select id="selectedFontFamily">
-                                <option value="Arial">Arial</option>
-                                <option value="Helvetica">Helvetica</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Poppins">Poppins</option>
-                                <option value="Inter">Inter</option>
-                                <option value="Montserrat">Montserrat</option>
-                                <option value="Roboto">Roboto</option>
-                                <option value="Open Sans">Open Sans</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Title Controls -->
-                <div class="control-group">
-                    <h5><i class="fas fa-heading"></i> Title Controls</h5>
-                    <div class="control-row">
-                        <div class="control-item">
-                            <label>Title Color</label>
-                            <input type="color" id="titleColor" value="#000000">
-                        </div>
-                        <div class="control-item">
-                            <label>Title Font Size</label>
-                            <input type="range" id="titleFontSize" min="16" max="72" value="32" step="2">
-                        </div>
-                    </div>
-                    <div class="control-row">
-                        <div class="control-item">
-                            <label>Title Font Family</label>
-                            <select id="titleFontFamily">
-                                <option value="Arial">Arial</option>
-                                <option value="Helvetica">Helvetica</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Poppins" selected>Poppins</option>
-                                <option value="Inter">Inter</option>
-                                <option value="Montserrat">Montserrat</option>
-                                <option value="Roboto">Roboto</option>
-                                <option value="Open Sans">Open Sans</option>
-                            </select>
-                        </div>
-                        <div class="control-item">
-                            <label>Title Font Weight</label>
-                            <div class="weight-buttons">
-                                <button type="button" class="title-weight-btn" data-weight="normal">Normal</button>
-                                <button type="button" class="title-weight-btn active" data-weight="bold">Bold</button>
+                            <div class="d-flex align-items-center justify-content-between mb-3 pt-2">
+                                <label class="small text-muted mb-0">Color</label>
+                                <input type="color" id="selectedColor" class="form-control form-control-color shadow-sm"
+                                    value="#000000" style="width: 60px;">
                             </div>
-                        </div>
-                    </div>
-                    <div class="control-item">
-                        <label>Title Alignment</label>
-                        <div class="alignment-buttons">
-                            <button type="button" class="title-alignment-btn" data-align="left">
-                                <i class="fas fa-align-left"></i>
-                            </button>
-                            <button type="button" class="title-alignment-btn active" data-align="center">
-                                <i class="fas fa-align-center"></i>
-                            </button>
-                            <button type="button" class="title-alignment-btn" data-align="right">
-                                <i class="fas fa-align-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Description Controls -->
-                <div class="control-group">
-                    <h5><i class="fas fa-paragraph"></i> Description Controls</h5>
-                    <div class="control-row">
-                        <div class="control-item">
-                            <label>Description Color</label>
-                            <input type="color" id="descriptionColor" value="#333333">
-                        </div>
-                        <div class="control-item">
-                            <label>Description Font Size</label>
-                            <input type="range" id="descriptionFontSize" min="12" max="48" value="18" step="1">
-                        </div>
-                    </div>
-                    <div class="control-row">
-                        <div class="control-item">
-                            <label>Description Font Family</label>
-                            <select id="descriptionFontFamily">
-                                <option value="Arial">Arial</option>
-                                <option value="Helvetica">Helvetica</option>
-                                <option value="Georgia">Georgia</option>
-                                <option value="Poppins" selected>Poppins</option>
-                                <option value="Inter">Inter</option>
-                                <option value="Montserrat">Montserrat</option>
-                                <option value="Roboto">Roboto</option>
-                                <option value="Open Sans">Open Sans</option>
-                            </select>
-                        </div>
-                        <div class="control-item">
-                            <label>Description Font Weight</label>
-                            <div class="weight-buttons">
-                                <button type="button" class="description-weight-btn active"
-                                    data-weight="normal">Normal</button>
-                                <button type="button" class="description-weight-btn" data-weight="bold">Bold</button>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <label class="small text-muted">Size</label>
+                                    <span class="small text-muted" id="selectedFontSizeDisplay">24px</span>
+                                </div>
+                                <input type="range" id="selectedFontSize" min="12" max="120" value="24" step="1"
+                                    class="form-range"
+                                    oninput="document.getElementById('selectedFontSizeDisplay').textContent = this.value + 'px'">
                             </div>
-                        </div>
-                    </div>
-                    <div class="control-item">
-                        <label>Description Alignment</label>
-                        <div class="alignment-buttons">
-                            <button type="button" class="description-alignment-btn" data-align="left">
-                                <i class="fas fa-align-left"></i>
-                            </button>
-                            <button type="button" class="description-alignment-btn active" data-align="center">
-                                <i class="fas fa-align-center"></i>
-                            </button>
-                            <button type="button" class="description-alignment-btn" data-align="right">
-                                <i class="fas fa-align-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- General Text Controls -->
-                <div class="control-group">
-                    <h5><i class="fas fa-sliders-h"></i> General Text Controls</h5>
-                    <div class="control-row">
-                        <div class="control-item">
-                            <label>Line Height</label>
-                            <input type="range" id="lineHeight" min="0.8" max="2.0" value="1.2" step="0.1">
-                        </div>
-                        <div class="control-item">
-                            <label>Letter Spacing</label>
-                            <input type="range" id="letterSpacing" min="-2" max="10" value="0" step="0.5">
-                        </div>
-                    </div>
-                    <div class="control-item">
-                        <label>Text Transform</label>
-                        <div class="transform-buttons">
-                            <button type="button" class="transform-btn active" data-transform="none">None</button>
-                            <button type="button" class="transform-btn" data-transform="uppercase">Uppercase</button>
-                            <button type="button" class="transform-btn" data-transform="lowercase">Lowercase</button>
-                            <button type="button" class="transform-btn" data-transform="capitalize">Capitalize</button>
+                            <div class="mb-3">
+                                <label class="small text-muted mb-1 d-block">Font Family</label>
+                                <select id="selectedFontFamily" class="form-select form-select-sm shadow-sm">
+                                    <option value="Arial">Arial</option>
+                                    <option value="Helvetica">Helvetica</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Poppins">Poppins</option>
+                                    <option value="Inter">Inter</option>
+                                    <option value="Montserrat">Montserrat</option>
+                                    <option value="Roboto">Roboto</option>
+                                    <option value="Open Sans">Open Sans</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="small text-muted mb-1 d-block">Style</label>
+                                <div class="btn-group w-100 shadow-sm" role="group">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm selected-weight-btn"
+                                        data-weight="bold"><i class="fas fa-bold"></i></button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm selected-style-btn"
+                                        data-style="italic"><i class="fas fa-italic"></i></button>
+                                    <button type="button"
+                                        class="btn btn-outline-secondary btn-sm selected-decoration-btn"
+                                        data-decoration="underline"><i class="fas fa-underline"></i></button>
+                                </div>
+                            </div>
+                            <button id="deleteSelectedElementBtn" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="fas fa-trash me-2"></i> Delete Element
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="form-group">
+                <label>Image Prompt</label>
+                <textarea id="slideImagePrompt" placeholder="Describe the background image" rows="2"
+                    class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Generated Image URL</label>
+                <input type="text" id="generatedImageUrl" placeholder="No image generated yet" class="form-control"
+                    readonly>
+                <div class="form-hint">This will be updated when you generate an image</div>
+            </div>
+            <!-- Update Slide button removed in favor of dynamic auto-save -->
+            <button id="regenerateSlide" class="btn btn-warning">
+                <i class="fas fa-robot"></i> Regenerate with AI
+            </button>
+        </div>
 
-            <div class="properties-section">
-                <h5>Platform Templates</h5>
-                <div class="form-group">
-                    <label>Platform</label>
-                    <select id="platformSelect" class="form-control">
-                        <option value="instagram">Instagram</option>
-                        <option value="linkedin">LinkedIn</option>
-                    </select>
+        <div class="properties-section">
+            <h5>Canvas Settings</h5>
+            <div class="form-group">
+                <label>Width (px)</label>
+                <input type="number" id="canvasWidth" placeholder="1080" class="form-control" min="100" max="4000">
+            </div>
+            <div class="form-group">
+                <label>Height (px)</label>
+                <input type="number" id="canvasHeight" placeholder="1080" class="form-control" min="100" max="4000">
+            </div>
+            <button id="updateCanvasSize" class="btn btn-secondary">
+                <i class="fas fa-expand"></i> Update Canvas
+            </button>
+        </div>
+
+        <!-- General Text Controls (Global) -->
+        <div class="control-group">
+            <h5><i class="fas fa-sliders-h"></i> General Text Settings</h5>
+            <div class="control-row">
+                <div class="control-item">
+                    <label>Line Height</label>
+                    <input type="range" id="lineHeight" min="0.8" max="2.0" value="1.2" step="0.1">
                 </div>
-                <div class="form-group">
-                    <label>Format</label>
-                    <select id="formatSelect" class="form-control">
-                        <option value="square">Square (1:1)</option>
-                        <option value="portrait">Portrait (4:5)</option>
-                        <option value="story">Story (9:16)</option>
-                        <option value="landscape">Landscape (1.91:1)</option>
-                    </select>
+                <div class="control-item">
+                    <label>Letter Spacing</label>
+                    <input type="range" id="letterSpacing" min="-2" max="10" value="0" step="0.5">
                 </div>
-                <button id="applyTemplate" class="btn btn-secondary">
-                    <i class="fas fa-magic"></i> Apply Template
-                </button>
+            </div>
+            <div class="control-item">
+                <label>Text Transform</label>
+                <div class="transform-buttons">
+                    <button type="button" class="transform-btn active" data-transform="none">None</button>
+                    <button type="button" class="transform-btn" data-transform="uppercase">Uppercase</button>
+                    <button type="button" class="transform-btn" data-transform="lowercase">Lowercase</button>
+                    <button type="button" class="transform-btn" data-transform="capitalize">Capitalize</button>
+                </div>
             </div>
         </div>
+
+        <div class="properties-section">
+            <h5>Platform Templates</h5>
+            <div class="form-group">
+                <label>Platform</label>
+                <select id="platformSelect" class="form-control">
+                    <option value="instagram">Instagram</option>
+                    <option value="linkedin">LinkedIn</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Format</label>
+                <select id="formatSelect" class="form-control">
+                    <option value="square">Square (1:1)</option>
+                    <option value="portrait">Portrait (4:5)</option>
+                    <option value="story">Story (9:16)</option>
+                    <option value="landscape">Landscape (1.91:1)</option>
+                </select>
+            </div>
+            <button id="applyTemplate" class="btn btn-secondary">
+                <i class="fas fa-magic"></i> Apply Template
+            </button>
+        </div>
     </div>
-    {% endif %}
+</div>
+{% endif %}
 </div>
 
 <!-- Loading overlay -->
@@ -2040,6 +2136,24 @@
     // CSRF Token helper
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    // Toggle controls helper
+    function toggleControls(panelId, btn) {
+        const panel = document.getElementById(panelId);
+        if (panel) {
+            const isHidden = panel.style.display === 'none';
+            panel.style.display = isHidden ? 'block' : 'none';
+
+            // Update icon if button provided
+            if (btn) {
+                const icon = btn.querySelector('.fa-chevron-down') || btn.querySelector('.fa-chevron-up');
+                if (icon) {
+                    icon.classList.remove(isHidden ? 'fa-chevron-down' : 'fa-chevron-up');
+                    icon.classList.add(isHidden ? 'fa-chevron-up' : 'fa-chevron-down');
+                }
+            }
+        }
     }
 
     class CarouselEditor {
@@ -2601,7 +2715,7 @@
 
             // Create title text
             const title = new Konva.Text({
-                x: slide.title_x !== null && slide.title_x !== undefined ? slide.title_x : width / 2,
+                x: slide.title_x !== null && slide.title_x !== undefined ? slide.title_x : (width - (width * 0.8)) / 2, // Centered if x is null
                 y: slide.title_y !== null && slide.title_y !== undefined ? slide.title_y : height / 3 - 40,
                 text: slide.title || `Slide ${slideIndex + 1}`,
                 fontSize: 48,
@@ -2619,13 +2733,12 @@
                 draggable: true
             });
 
-            if (slide.title_x === null || slide.title_x === undefined) {
-                title.offsetX(title.width() / 2);
-            }
+            // No dynamic offsetX - keep anchor top-left for consistency
+            // If centered logic needed, do it via x calculation above.
 
             // Create description text
             const description = new Konva.Text({
-                x: slide.description_x !== null && slide.description_x !== undefined ? slide.description_x : width / 2,
+                x: slide.description_x !== null && slide.description_x !== undefined ? slide.description_x : (width - (width * 0.7)) / 2,
                 y: slide.description_y !== null && slide.description_y !== undefined ? slide.description_y : height / 2 + 20,
                 text: slide.description || 'Add description here',
                 fontSize: 24,
@@ -2643,8 +2756,27 @@
                 draggable: true
             });
 
-            if (slide.description_x === null || slide.description_x === undefined) {
-                description.offsetX(description.width() / 2);
+            // Re-apply styles if saved in text_styles (standard nodes)
+            // This is critical for persisting bold/italic/underline across reloads
+            if (slide.text_styles) {
+                if (slide.text_styles.title) {
+                    const ts = slide.text_styles.title;
+                    if (ts.fill) title.fill(ts.fill);
+                    if (ts.fontSize) title.fontSize(ts.fontSize);
+                    if (ts.fontFamily) title.fontFamily(ts.fontFamily);
+                    if (ts.fontStyle) title.fontStyle(ts.fontStyle);
+                    if (ts.textDecoration) title.textDecoration(ts.textDecoration);
+                    if (ts.align) title.align(ts.align);
+                }
+                if (slide.text_styles.description) {
+                    const ds = slide.text_styles.description;
+                    if (ds.fill) description.fill(ds.fill);
+                    if (ds.fontSize) description.fontSize(ds.fontSize);
+                    if (ds.fontFamily) description.fontFamily(ds.fontFamily);
+                    if (ds.fontStyle) description.fontStyle(ds.fontStyle);
+                    if (ds.textDecoration) description.textDecoration(ds.textDecoration);
+                    if (ds.align) description.align(ds.align);
+                }
             }
 
             // Migrate legacy extra_text to extra_texts array if it exists and array is empty
@@ -2904,12 +3036,31 @@
                 updateControl('titleColor', titleStyles.fill || slide.font_color || '#000000');
                 updateControl('titleFontSize', titleStyles.fontSize || 48);
                 updateControl('titleFontFamily', titleStyles.fontFamily || 'Poppins');
-                // For font weight, we need to find the button with the correct data-weight
-                const titleWeightBtn = document.querySelector(`.title-weight-btn[data-weight="${titleStyles.fontStyle === 'bold' ? 'bold' : 'normal'}"]`);
-                if (titleWeightBtn) {
-                    document.querySelectorAll('.title-weight-btn').forEach(btn => btn.classList.remove('active'));
-                    titleWeightBtn.classList.add('active');
+
+                // Weight (Bold)
+                const isTitleBold = titleStyles.fontStyle && titleStyles.fontStyle.includes('bold');
+                const titleBoldBtn = document.querySelector('.title-weight-btn[data-weight="bold"]');
+                if (titleBoldBtn) {
+                    if (isTitleBold) titleBoldBtn.classList.add('active');
+                    else titleBoldBtn.classList.remove('active');
                 }
+
+                // Style (Italic)
+                const isTitleItalic = titleStyles.fontStyle && titleStyles.fontStyle.includes('italic');
+                const titleItalicBtn = document.querySelector('.title-style-btn[data-style="italic"]');
+                if (titleItalicBtn) {
+                    if (isTitleItalic) titleItalicBtn.classList.add('active');
+                    else titleItalicBtn.classList.remove('active');
+                }
+
+                // Decoration (Underline)
+                const isTitleUnderline = titleStyles.textDecoration && titleStyles.textDecoration.includes('underline');
+                const titleUnderlineBtn = document.querySelector('.title-decoration-btn[data-decoration="underline"]');
+                if (titleUnderlineBtn) {
+                    if (isTitleUnderline) titleUnderlineBtn.classList.add('active');
+                    else titleUnderlineBtn.classList.remove('active');
+                }
+
                 const titleAlignBtn = document.querySelector(`.title-alignment-btn[data-align="${titleStyles.align || 'center'}"]`);
                 if (titleAlignBtn) {
                     document.querySelectorAll('.title-alignment-btn').forEach(btn => btn.classList.remove('active'));
@@ -2922,11 +3073,31 @@
                 updateControl('descriptionColor', descriptionStyles.fill || slide.font_color || '#000000');
                 updateControl('descriptionFontSize', descriptionStyles.fontSize || 24);
                 updateControl('descriptionFontFamily', descriptionStyles.fontFamily || 'Inter');
-                const descriptionWeightBtn = document.querySelector(`.description-weight-btn[data-weight="${descriptionStyles.fontStyle === 'bold' ? 'bold' : 'normal'}"]`);
-                if (descriptionWeightBtn) {
-                    document.querySelectorAll('.description-weight-btn').forEach(btn => btn.classList.remove('active'));
-                    descriptionWeightBtn.classList.add('active');
+
+                // Weight (Bold)
+                const isDescBold = descriptionStyles.fontStyle && descriptionStyles.fontStyle.includes('bold');
+                const descBoldBtn = document.querySelector('.description-weight-btn[data-weight="bold"]');
+                if (descBoldBtn) {
+                    if (isDescBold) descBoldBtn.classList.add('active');
+                    else descBoldBtn.classList.remove('active');
                 }
+
+                // Style (Italic)
+                const isDescItalic = descriptionStyles.fontStyle && descriptionStyles.fontStyle.includes('italic');
+                const descItalicBtn = document.querySelector('.description-style-btn[data-style="italic"]');
+                if (descItalicBtn) {
+                    if (isDescItalic) descItalicBtn.classList.add('active');
+                    else descItalicBtn.classList.remove('active');
+                }
+
+                // Decoration (Underline)
+                const isDescUnderline = descriptionStyles.textDecoration && descriptionStyles.textDecoration.includes('underline');
+                const descUnderlineBtn = document.querySelector('.description-decoration-btn[data-decoration="underline"]');
+                if (descUnderlineBtn) {
+                    if (isDescUnderline) descUnderlineBtn.classList.add('active');
+                    else descUnderlineBtn.classList.remove('active');
+                }
+
                 const descriptionAlignBtn = document.querySelector(`.description-alignment-btn[data-align="${descriptionStyles.align || 'center'}"]`);
                 if (descriptionAlignBtn) {
                     document.querySelectorAll('.description-alignment-btn').forEach(btn => btn.classList.remove('active'));
@@ -3721,6 +3892,171 @@
 
                 toastr.info(`Applied ${platform} ${format} template (${dimensions.width}×${dimensions.height})`);
             });
+
+            // --- Event Listeners for Style Buttons (Bold, Italic, Underline) ---
+            const handleStyleClick = (targetName, property, value, btn) => {
+                const slide = this.slides[this.currentSlide];
+                if (!slide) return;
+
+                // Determine target node name
+                let target = targetName;
+                // If specific target passed (title/description), use it.
+
+                // Initialize text_styles if missing
+                if (!slide.text_styles) slide.text_styles = {};
+
+                // Handle 'extra_text' item lookup vs standard nodes
+                let item;
+                if (target.startsWith('extra_text_')) {
+                    const id = target.replace('extra_text_', '');
+                    if (slide.extra_texts) {
+                        item = slide.extra_texts.find(t => t.id === id);
+                    }
+                    if (!item) return; // Should not happen if target is valid
+                    if (!item.styles) item.styles = {};
+                } else {
+                    if (!slide.text_styles[target]) slide.text_styles[target] = {};
+                }
+
+                // Get current value
+                let currentVal;
+                if (item) {
+                    currentVal = item.styles[property];
+                } else {
+                    currentVal = slide.text_styles[target][property] || 'normal';
+                }
+
+                // Calculate New Value (Toggle Logic)
+                let newValue = value;
+
+                if (property === 'fontStyle') {
+                    // Handle bold / italic
+                    // Current could be 'normal', 'bold', 'italic', 'italic bold'
+                    // We treat them as independent boolean flags roughly.
+                    const isBold = currentVal.includes('bold');
+                    const isItalic = currentVal.includes('italic');
+
+                    if (value === 'bold') {
+                        if (isBold) {
+                            // Remove bold
+                            newValue = currentVal.replace('bold', '').trim();
+                        } else {
+                            // Add bold
+                            newValue = currentVal === 'normal' ? 'bold' : `${currentVal} bold`;
+                        }
+                    } else if (value === 'italic') {
+                        if (isItalic) {
+                            // Remove italic
+                            newValue = currentVal.replace('italic', '').trim();
+                        } else {
+                            // Add italic
+                            newValue = currentVal === 'normal' ? 'italic' : `${currentVal} italic`;
+                        }
+                    }
+                    // Clean up
+                    if (!newValue || newValue === '') newValue = 'normal';
+                    newValue = newValue.replace(/\s+/g, ' ').trim();
+                }
+
+                if (property === 'textDecoration') {
+                    // Simple toggle for underline
+                    newValue = (currentVal === 'underline') ? '' : 'underline';
+                }
+
+                // Apply New Value
+                if (item) {
+                    item.styles[property] = newValue;
+                } else {
+                    slide.text_styles[target][property] = newValue;
+                }
+
+                // Update Button State
+                btn.classList.toggle('active');
+
+                // Update Canvas Node
+                const node = this.layer.findOne('.' + target) || this.layer.findOne(`[name="${target}"]`);
+                if (node) {
+                    node.setAttr(property, newValue);
+                    this.layer.batchDraw();
+                }
+
+                this.debouncedSave();
+            };
+
+            // Attach Listeners
+            // Title
+            document.querySelectorAll('.title-weight-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleStyleClick('title', 'fontStyle', 'bold', e.currentTarget));
+            });
+            document.querySelectorAll('.title-style-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleStyleClick('title', 'fontStyle', 'italic', e.currentTarget));
+            });
+            document.querySelectorAll('.title-decoration-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleStyleClick('title', 'textDecoration', 'underline', e.currentTarget));
+            });
+
+            // Description
+            document.querySelectorAll('.description-weight-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleStyleClick('description', 'fontStyle', 'bold', e.currentTarget));
+            });
+            document.querySelectorAll('.description-style-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleStyleClick('description', 'fontStyle', 'italic', e.currentTarget));
+            });
+            document.querySelectorAll('.description-decoration-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => handleStyleClick('description', 'textDecoration', 'underline', e.currentTarget));
+            });
+
+            // Selected (Extra Text)
+            document.querySelectorAll('.selected-weight-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (this.activeTextTarget && this.activeTextTarget.startsWith('extra_text_'))
+                        handleStyleClick(this.activeTextTarget, 'fontStyle', 'bold', e.currentTarget);
+                });
+            });
+            document.querySelectorAll('.selected-style-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (this.activeTextTarget && this.activeTextTarget.startsWith('extra_text_'))
+                        handleStyleClick(this.activeTextTarget, 'fontStyle', 'italic', e.currentTarget);
+                });
+            });
+            document.querySelectorAll('.selected-decoration-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (this.activeTextTarget && this.activeTextTarget.startsWith('extra_text_'))
+                        handleStyleClick(this.activeTextTarget, 'textDecoration', 'underline', e.currentTarget);
+                });
+            });
+
+            // Delete Selected Element
+            const deleteBtn = document.getElementById('deleteSelectedElementBtn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    if (this.activeTextTarget && this.activeTextTarget.startsWith('extra_text_')) {
+                        const id = this.activeTextTarget.replace('extra_text_', '');
+                        const slide = this.slides[this.currentSlide];
+                        if (slide && slide.extra_texts) {
+                            slide.extra_texts = slide.extra_texts.filter(t => t.id !== id);
+
+                            const node = this.layer.findOne('.' + this.activeTextTarget) || this.layer.findOne(`[name="${this.activeTextTarget}"]`);
+                            if (node) {
+                                // Remove transformer if attached
+                                if (this.transformer.nodes().includes(node)) {
+                                    this.transformer.nodes([]);
+                                }
+                                node.destroy();
+                                this.layer.batchDraw();
+                            }
+
+                            // Hide controls
+                            const controls = document.getElementById('selectedTextControls');
+                            if (controls) controls.style.display = 'none';
+                            this.activeTextTarget = null;
+
+                            this.debouncedSave();
+                            toastr.success('Text element deleted');
+                        }
+                    }
+                });
+            }
         }
 
         drawGrid() {
@@ -3831,20 +4167,69 @@
             // Update Sidebar values to match this node
             const styles = itemData ? (itemData.styles || {}) : {};
 
-            // Show Selected Text Controls
+            // Show Selected Text Controls ONLY if it's an extra text item
             const selectedControls = document.getElementById('selectedTextControls');
+
             if (selectedControls) {
-                selectedControls.style.display = 'block';
+                // Check if it is an extra text node (starts with extra_text_)
+                if (node.name().startsWith('extra_text_')) {
+                    selectedControls.style.display = 'block';
 
-                // Populate values
-                const colorInput = document.getElementById('selectedColor');
-                if (colorInput) colorInput.value = styles.fill || node.fill() || '#000000';
+                    // Update label with selected text content
+                    const label = document.getElementById('selectedTextLabel');
+                    if (label) {
+                        const textContent = itemData ? itemData.text : node.text();
+                        label.textContent = `Selected: "${textContent.substring(0, 15)}${textContent.length > 15 ? '...' : ''}"`;
+                    }
 
-                const sizeInput = document.getElementById('selectedFontSize');
-                if (sizeInput) sizeInput.value = styles.fontSize || node.fontSize() || 24;
+                    // Populate values
+                    const colorInput = document.getElementById('selectedColor');
+                    if (colorInput) colorInput.value = styles.fill || node.fill() || '#000000';
 
-                const familyInput = document.getElementById('selectedFontFamily');
-                if (familyInput) familyInput.value = styles.fontFamily || node.fontFamily() || 'Inter';
+                    const sizeInput = document.getElementById('selectedFontSize');
+                    if (sizeInput) {
+                        const size = styles.fontSize || node.fontSize() || 24;
+                        sizeInput.value = size;
+                        const display = document.getElementById('selectedFontSizeDisplay');
+                        if (display) display.textContent = size + 'px';
+                    }
+
+                    const familyInput = document.getElementById('selectedFontFamily');
+                    if (familyInput) familyInput.value = styles.fontFamily || node.fontFamily() || 'Inter';
+
+                    // Update Style Buttons State
+                    const currentStyle = styles.fontStyle || node.fontStyle() || 'normal';
+                    const currentDecor = styles.textDecoration || node.textDecoration() || 'none';
+
+                    // Bold
+                    const isBold = currentStyle.includes('bold');
+                    const boldBtn = document.querySelector('.selected-weight-btn');
+                    if (boldBtn) {
+                        isBold ? boldBtn.classList.add('active') : boldBtn.classList.remove('active');
+                    }
+
+                    // Italic
+                    const isItalic = currentStyle.includes('italic');
+                    const italicBtn = document.querySelector('.selected-style-btn');
+                    if (italicBtn) {
+                        isItalic ? italicBtn.classList.add('active') : italicBtn.classList.remove('active');
+                    }
+
+                    // Underline
+                    const isUnderline = currentDecor.includes('underline');
+                    const underlineBtn = document.querySelector('.selected-decoration-btn');
+                    if (underlineBtn) {
+                        isUnderline ? underlineBtn.classList.add('active') : underlineBtn.classList.remove('active');
+                    }
+
+                    // Show/Hide Delete Button based on context (always show for extra text)
+                    const deleteBtn = document.getElementById('deleteSelectedElementBtn');
+                    if (deleteBtn) deleteBtn.style.display = 'block';
+
+                } else {
+                    // Hide controls for Title or Description
+                    selectedControls.style.display = 'none';
+                }
             }
 
             // We need to tell the editor that subsequent style changes apply to THIS node.
@@ -4080,14 +4465,14 @@
             this.initColorControl('titleColor', 'title');
             this.initRangeControl('titleFontSize', 'title', 'fontSize');
             this.initSelectControl('titleFontFamily', 'title', 'fontFamily');
-            this.initButtonGroup('title-weight-btn', 'title', 'fontWeight', 'data-weight');
+            // this.initButtonGroup('title-weight-btn', 'title', 'fontWeight', 'data-weight'); // Managed by CarouselEditor
             this.initButtonGroup('title-alignment-btn', 'title', 'align', 'data-align');
 
             // Description Controls
             this.initColorControl('descriptionColor', 'description');
             this.initRangeControl('descriptionFontSize', 'description', 'fontSize');
             this.initSelectControl('descriptionFontFamily', 'description', 'fontFamily');
-            this.initButtonGroup('description-weight-btn', 'description', 'fontWeight', 'data-weight');
+            // this.initButtonGroup('description-weight-btn', 'description', 'fontWeight', 'data-weight'); // Managed by CarouselEditor
             this.initButtonGroup('description-alignment-btn', 'description', 'align', 'data-align');
 
             // General Text Controls
