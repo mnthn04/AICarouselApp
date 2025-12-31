@@ -1679,9 +1679,6 @@
     <div class="editor-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-layer-group"></i> Slides</h3>
-            <button id="addSlide" style="margin-right: -33px;" class="btn btn-secondary">
-                <i class="fas fa-plus"></i> Add
-            </button>
         </div>
 
         <div class="slides-list" id="slidesList">
@@ -1690,6 +1687,17 @@
                 <div class="loading-spinner small"></div>
                 <p>Loading slides...</p>
             </div>
+        </div>
+
+        <!-- Slide Action Buttons -->
+        <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 16px;">
+            <button id="generateAllImages" class="btn btn-accent" style="flex: 1;"
+                title="Generate images for all slides">
+                <i class="fas fa-images"></i> Generate All Images
+            </button>
+            <button id="addSlide" class="btn btn-secondary" style="flex: 1;">
+                <i class="fas fa-plus"></i> Add Slide
+            </button>
         </div>
 
         <div class="sidebar-section">
@@ -3706,6 +3714,88 @@
                     this.debouncedSave();
                 });
             }
+
+            // Generate All Images button - generates images for slides without images
+            document.getElementById('generateAllImages').addEventListener('click', async () => {
+                const btn = document.getElementById('generateAllImages');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+                try {
+                    // Find slides without images
+                    const slidesNeedingImages = this.slides.filter(slide => !slide.generated_image);
+
+                    if (slidesNeedingImages.length === 0) {
+                        toastr.info('All slides already have images!');
+                        return;
+                    }
+
+                    toastr.info(`Generating images for ${slidesNeedingImages.length} slides. This may take a few minutes...`);
+
+                    let successCount = 0;
+                    let failCount = 0;
+
+                    // Generate images one at a time (sequentially to avoid timeout)
+                    for (let i = 0; i < slidesNeedingImages.length; i++) {
+                        const slide = slidesNeedingImages[i];
+                        const slideIndex = this.slides.findIndex(s => s.id === slide.id);
+
+                        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${i + 1}/${slidesNeedingImages.length}`;
+
+                        try {
+                            const prompt = slide.image_prompt || `Professional ${slide.title || 'carousel'} background`;
+
+                            const response = await fetch('/api/generate-and-apply/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCSRFToken()
+                                },
+                                body: JSON.stringify({
+                                    description: prompt,
+                                    slide_id: slide.id,
+                                    platform: 'instagram'
+                                })
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Update slide with generated image
+                                this.slides[slideIndex].generated_image = data.filename;
+                                successCount++;
+
+                                // Update preview in slides list
+                                this.renderSlidesList();
+
+                                console.log(`✅ Image generated for slide ${slideIndex + 1}`);
+                            } else {
+                                failCount++;
+                                console.error(`Failed to generate image for slide ${slideIndex + 1}:`, data.error);
+                            }
+                        } catch (error) {
+                            failCount++;
+                            console.error(`Error generating image for slide ${slideIndex + 1}:`, error);
+                        }
+                    }
+
+                    // Re-render current slide
+                    await this.renderSlide(this.currentSlide);
+                    this.renderSlidesList();
+
+                    if (failCount === 0) {
+                        toastr.success(`Successfully generated ${successCount} images!`);
+                    } else {
+                        toastr.warning(`Generated ${successCount} images, ${failCount} failed.`);
+                    }
+                } catch (error) {
+                    console.error('Error in generate all images:', error);
+                    toastr.error('Failed to generate images');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-images"></i> Gen All';
+                }
+            });
 
             // Add slide button
             document.getElementById('addSlide').addEventListener('click', async () => {

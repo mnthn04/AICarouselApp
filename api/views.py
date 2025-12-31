@@ -390,16 +390,16 @@ def generate_saystory_carousel(request):
             print(f"\n🤖 STEP 1: Generating slide content...")
             slides_content = generate_saystory_slides_content(topic, slide_count, platform, style)
             
-            # Step 2: Create slides and generate images
-            print(f"\n🎨 STEP 2: Creating slides and generating images...")
+            # Step 2: Create slides WITHOUT generating images (to avoid timeout)
+            # Images will be generated one-by-one in the editor
+            print(f"\n🎨 STEP 2: Creating slides (images will be generated in editor)...")
             slides_data = []
-            generated_images_count = 0
             
             for i, content in enumerate(slides_content):
                 # Get platform dimensions
                 saystorys_width, saystorys_height = get_platform_dimensions(platform)
                 
-                # Create the slide with content
+                # Create the slide with content only (no image yet)
                 slide = Slide.objects.create(
                     project=project,
                     slide_number=i + 1,
@@ -412,31 +412,7 @@ def generate_saystory_carousel(request):
                     saystorys_height=saystorys_height
                 )
                 
-                # Generate saystory-style image for this slide
-                print(f"\n🖼️ Generating image for Slide {i+1}...")
-                try:
-                    image_filename = generate_saystory_image(
-                        content['image_prompt'],
-                        platform,
-                        style,
-                        slide.id,
-                        bg_color=slide.background_color,
-                        profile_image_path=project.profile_image.path if project.profile_image else None,
-                        brand_logo_path=project.brand_logo.path if project.brand_logo else None
-                    )
-                    
-                    if image_filename:
-                        slide.generated_image = image_filename
-                        slide.save()
-                        generated_images_count += 1
-                        print(f"✅ Image generated for Slide {i+1}")
-                    else:
-                        print(f"⚠️ Image generation failed for Slide {i+1}")
-                        
-                except Exception as img_error:
-                    print(f"❌ Image generation error: {img_error}")
-                
-                # Prepare response data
+                # Prepare response data (no image yet)
                 slide_data = {
                     'id': slide.id,
                     'slide_number': slide.slide_number,
@@ -445,24 +421,22 @@ def generate_saystory_carousel(request):
                     'image_prompt': slide.image_prompt,
                     'background_color': slide.background_color,
                     'font_color': slide.font_color,
-                    'generated_image': slide.generated_image
+                    'generated_image': None
                 }
-                
-                if slide.generated_image:
-                    slide_data['generated_image_url'] = f"{settings.MEDIA_URL}{slide.generated_image}"
                 
                 slides_data.append(slide_data)
                 print(f"✅ Slide {i+1}: {slide.title[:40]}...")
             
-            print(f"\n🎉 CAROUSEL GENERATION COMPLETE!")
+            print(f"\n🎉 CAROUSEL CREATION COMPLETE!")
             print(f"✅ Created {len(slides_data)} slides")
-            print(f"✅ Generated {generated_images_count} images")
+            print(f"💡 Images will be generated in the editor")
             
             return JsonResponse({
                 'success': True,
                 'project_id': project.id,
                 'slides': slides_data,
-                'message': f'saystory carousel with {len(slides_data)} slides generated successfully!'
+                'images_pending': True,  # Flag to indicate images need generation
+                'message': f'Carousel created! Redirecting to editor to generate images...'
             })
             
         except Exception as e:
