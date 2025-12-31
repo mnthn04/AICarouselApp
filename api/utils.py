@@ -1,5 +1,5 @@
 """
-Utility functions for Canva Carousel Generator
+Utility functions for saystory Carousel Generator
 """
 import re
 import os
@@ -62,7 +62,7 @@ def generate_simple_slides(topic, slide_count):
         slides.append({
             'title': f"{topic} - Part {i+1}",
             'description': f"Learn about {topic} in this comprehensive guide.",
-            'image_prompt': f"Canva template background for {topic}",
+            'image_prompt': f"saystory template background for {topic}",
             'background_color': '#405DE6',
             'font_color': '#FFFFFF'
         })
@@ -92,8 +92,8 @@ def create_slide_image_url(filename):
         return None
     return f"{settings.MEDIA_URL}{filename}"
 
-def generate_canva_background_svg(width, height, platform="instagram", style="modern"):
-    """Generate a clean Canva-style SVG background"""
+def generate_saystory_background_svg(width, height, platform="instagram", style="modern"):
+    """Generate a clean saystory-style SVG background"""
     import random
     
     # Platform-based color schemes
@@ -164,7 +164,7 @@ def generate_canva_background_svg(width, height, platform="instagram", style="mo
     return svg
 
 def get_platform_dimensions(platform, format_type="square"):
-    """Get platform-specific canvas dimensions"""
+    """Get platform-specific saystorys dimensions"""
     dimensions = {
         'instagram': {
             'square': (1080, 1080),

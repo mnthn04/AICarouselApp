@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone  # Add this import
 
 class CarouselProject(models.Model):
-    """Canva Carousel Project"""
+    """saystory Carousel Project"""
     topic = models.CharField(max_length=255)
     platform = models.CharField(max_length=50)
     style = models.CharField(max_length=100)
@@ -20,7 +20,7 @@ class CarouselProject(models.Model):
         return f"{self.topic} ({self.platform})"
 
 class Slide(models.Model):
-    """Canva Slide"""
+    """saystory Slide"""
     project = models.ForeignKey(CarouselProject, on_delete=models.CASCADE, related_name='slides')
     slide_number = models.IntegerField()
     title = models.TextField()
@@ -29,8 +29,8 @@ class Slide(models.Model):
     image_prompt = models.TextField()
     background_color = models.CharField(max_length=20, default='#FFFFFF')
     font_color = models.CharField(max_length=20, default='#000000')
-    canvas_width = models.IntegerField(default=1080)
-    canvas_height = models.IntegerField(default=1080)
+    saystorys_width = models.IntegerField(default=1080)
+    saystorys_height = models.IntegerField(default=1080)
     
     # Text Positioning
     title_x = models.IntegerField(blank=True, null=True)

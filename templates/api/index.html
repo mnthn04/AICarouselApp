@@ -13,7 +13,7 @@
             </h1>
             <p class="hero-subtitle">
                 Transform your ideas into professional carousel posts with AI-powered content generation,
-                Canva-style backgrounds, and platform-optimized designs.
+                saystory-style backgrounds, and platform-optimized designs.
             </p>
             <div class="hero-stats" role="region" aria-label="Statistics">
                 <div class="stat">
@@ -273,7 +273,8 @@
                     <ul role="list">
                         <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> AI-generated professional
                             content</li>
-                        <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Canva-style backgrounds</li>
+                        <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> saystory-style backgrounds
+                        </li>
                         <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Platform-optimized
                             dimensions</li>
                         <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Brand-consistent design</li>
@@ -306,7 +307,7 @@
                         <div class="feature-icon">
                             <i class="fas fa-palette" aria-hidden="true"></i>
                         </div>
-                        <h3>Canva-Style Design</h3>
+                        <h3>saystory-Style Design</h3>
                         <p>Beautiful, modern backgrounds with professional typography.</p>
                     </div>
                     <div class="feature-card">
@@ -456,6 +457,7 @@
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(formData),
+                timeout: 300000, // 5 minutes timeout for AI image generation
                 headers: {
                     'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
                 },
@@ -470,17 +472,27 @@
                         $('#loading').fadeOut();
                     }
                 },
-                error: function (xhr) {
-                    // Only show error if it's a JSON error from the server
-                    try {
-                        const error = JSON.parse(xhr.responseText);
-                        if (error.error) {
-                            toastr.error(error.error);
-                        }
-                    } catch {
-                        // Don't show network error message, just hide the loading spinner
-                    }
+                error: function (xhr, status, error) {
                     $('#loading').fadeOut();
+
+                    // Handle different error types
+                    if (status === 'timeout') {
+                        toastr.error('Request timed out. Please try again with fewer slides.');
+                    } else if (xhr.status === 0) {
+                        toastr.error('Network error. Please check your connection and try again.');
+                    } else {
+                        // Try to parse server error
+                        try {
+                            const errorData = JSON.parse(xhr.responseText);
+                            if (errorData.error) {
+                                toastr.error(errorData.error);
+                            } else {
+                                toastr.error('Generation failed. Please try again.');
+                            }
+                        } catch {
+                            toastr.error('An error occurred. Please try again.');
+                        }
+                    }
                 }
             });
         });

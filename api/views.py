@@ -1,6 +1,6 @@
 """
-Canva Carousel Generator - AI-Powered Slide Creation
-Uses OpenAI APIs (GPT-3.5/4 + DALL-E 3)
+saystory Carousel Generator - AI-Powered Slide Creation
+Uses OpenAI APIs
 """
 
 import json
@@ -19,7 +19,7 @@ from .models import CarouselProject, Slide
 from .utils import (
     validate_hex_color, save_image_from_url, generate_simple_slides,
     check_openai_connection, get_color_palette, create_slide_image_url,
-    generate_canva_background_svg, get_platform_dimensions
+    generate_saystory_background_svg, get_platform_dimensions
 )
 
 # Initialize OpenAI client
@@ -28,7 +28,7 @@ client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 # ==================== VIEWS ====================
 
 def index(request):
-    """Home page - Canva Carousel Generator"""
+    """Home page - saystory Carousel Generator"""
     return render(request, 'api/index.html')
 
 def templates_page(request):
@@ -43,7 +43,7 @@ def recent_page(request):
     })
 
 def editor(request, project_id=None):
-    """Canva-style Visual Editor"""
+    """saystory-style Visual Editor"""
     try:
         if project_id:
             project = CarouselProject.objects.get(id=project_id)
@@ -67,8 +67,8 @@ def editor(request, project_id=None):
                     'background_color': slide.background_color,
                     'font_color': slide.font_color,
                     'font_color': slide.font_color,
-                    'canvas_width': slide.canvas_width,
-                    'canvas_height': slide.canvas_height,
+                    'saystorys_width': slide.saystorys_width,
+                    'saystorys_height': slide.saystorys_height,
                     'generated_image': slide.generated_image,
                     'extra_text': slide.extra_text,
                     'extra_texts': slide.extra_texts, # Pass list of texts
@@ -194,7 +194,7 @@ def create_default_slides(topic, slide_count, platform, style):
     # Get color palette for platform
     colors = color_palettes.get(platform, color_palettes['instagram'])
 
-    # Canva-style slide templates - more professional and engaging
+    # saystory-style slide templates - more professional and engaging
     templates = [
         {
             'title': f"Unlock {topic} Excellence",
@@ -249,7 +249,7 @@ def create_default_slides(topic, slide_count, platform, style):
         slides.append({
             'title': template['title'],
             'description': template['description'],
-            'image_prompt': f"Minimal Canva {platform} background: {template['suffix']}, perfect for professional {topic} content, text-friendly design",
+            'image_prompt': f"Minimal saystory {platform} background: {template['suffix']}, perfect for professional {topic} content, text-friendly design",
             'background_color': bg_color,
             'font_color': font_color
         })
@@ -257,7 +257,7 @@ def create_default_slides(topic, slide_count, platform, style):
     return slides
 
 def create_fallback_slide(topic, slide_number, platform, style):
-    """Create a single fallback slide with Canva-style content"""
+    """Create a single fallback slide with saystory-style content"""
     # Platform-specific color palettes
     color_palettes = {
         'instagram': [
@@ -286,8 +286,8 @@ def create_fallback_slide(topic, slide_number, platform, style):
     colors = color_palettes.get(platform, color_palettes['instagram'])
     bg_color, font_color = colors[(slide_number - 1) % len(colors)]
 
-    # Canva-style titles - punchy and professional
-    canva_titles = [
+    # saystory-style titles - punchy and professional
+    saystory_titles = [
         f"Unlock {topic} Success",
         f"Master {topic} Fundamentals",
         f"Transform Your {topic} Journey",
@@ -300,8 +300,8 @@ def create_fallback_slide(topic, slide_number, platform, style):
         f"Conquer {topic} Challenges"
     ]
 
-    # Canva-style descriptions - concise and impactful
-    canva_descriptions = [
+    # saystory-style descriptions - concise and impactful
+    saystory_descriptions = [
         f"Discover the essential concepts that drive success in {topic}.",
         f"Master the core principles behind effective {topic} strategies.",
         f"Transform your approach with proven {topic} techniques.",
@@ -314,13 +314,13 @@ def create_fallback_slide(topic, slide_number, platform, style):
         f"Conquer obstacles and achieve {topic} mastery."
     ]
 
-    title_idx = min(slide_number - 1, len(canva_titles) - 1)
-    desc_idx = min(slide_number - 1, len(canva_descriptions) - 1)
+    title_idx = min(slide_number - 1, len(saystory_titles) - 1)
+    desc_idx = min(slide_number - 1, len(saystory_descriptions) - 1)
 
     return {
-        'title': canva_titles[title_idx],
-        'description': canva_descriptions[desc_idx],
-        'image_prompt': f"Minimal Canva {platform} background with soft {style} gradients, subtle abstract shapes, and clean professional design perfect for {topic} content",
+        'title': saystory_titles[title_idx],
+        'description': saystory_descriptions[desc_idx],
+        'image_prompt': f"Minimal saystory {platform} background with soft {style} gradients, subtle abstract shapes, and clean professional design perfect for {topic} content",
         'background_color': bg_color,
         'font_color': font_color
     }
@@ -328,9 +328,9 @@ def create_fallback_slide(topic, slide_number, platform, style):
 # ==================== CORE OPENAI FUNCTIONS ====================
 
 @csrf_exempt
-def generate_canva_carousel(request):
+def generate_saystory_carousel(request):
     """
-    Generate complete Canva-style carousel
+    Generate complete saystory-style carousel
     """
     if request.method == 'POST':
         try:
@@ -346,7 +346,7 @@ def generate_canva_carousel(request):
             if not topic:
                 return JsonResponse({'error': 'Topic is required'}, status=400)
             
-            print(f"\n🎨 GENERATING CANVA CAROUSEL")
+            print(f"\n🎨 GENERATING saystory CAROUSEL")
             print(f"📌 Topic: {topic}")
             print(f"📱 Platform: {platform}")
             print(f"✨ Style: {style}")
@@ -388,7 +388,7 @@ def generate_canva_carousel(request):
             
             # Step 1: Generate slide content
             print(f"\n🤖 STEP 1: Generating slide content...")
-            slides_content = generate_canva_slides_content(topic, slide_count, platform, style)
+            slides_content = generate_saystory_slides_content(topic, slide_count, platform, style)
             
             # Step 2: Create slides and generate images
             print(f"\n🎨 STEP 2: Creating slides and generating images...")
@@ -397,7 +397,7 @@ def generate_canva_carousel(request):
             
             for i, content in enumerate(slides_content):
                 # Get platform dimensions
-                canvas_width, canvas_height = get_platform_dimensions(platform)
+                saystorys_width, saystorys_height = get_platform_dimensions(platform)
                 
                 # Create the slide with content
                 slide = Slide.objects.create(
@@ -408,14 +408,14 @@ def generate_canva_carousel(request):
                     image_prompt=content['image_prompt'],
                     background_color=content['background_color'],
                     font_color=content['font_color'],
-                    canvas_width=canvas_width,
-                    canvas_height=canvas_height
+                    saystorys_width=saystorys_width,
+                    saystorys_height=saystorys_height
                 )
                 
-                # Generate Canva-style image for this slide
+                # Generate saystory-style image for this slide
                 print(f"\n🖼️ Generating image for Slide {i+1}...")
                 try:
-                    image_filename = generate_canva_image(
+                    image_filename = generate_saystory_image(
                         content['image_prompt'],
                         platform,
                         style,
@@ -462,7 +462,7 @@ def generate_canva_carousel(request):
                 'success': True,
                 'project_id': project.id,
                 'slides': slides_data,
-                'message': f'Canva carousel with {len(slides_data)} slides generated successfully!'
+                'message': f'saystory carousel with {len(slides_data)} slides generated successfully!'
             })
             
         except Exception as e:
@@ -475,11 +475,11 @@ def generate_canva_carousel(request):
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-def generate_canva_slides_content(topic, slide_count, platform, style):
+def generate_saystory_slides_content(topic, slide_count, platform, style):
     """
-    Generate Canva-style slide content using OpenAI API
+    Generate saystory-style slide content using OpenAI API
     """
-    print(f"📝 Generating {slide_count} Canva slides...")
+    print(f"📝 Generating {slide_count} saystory slides...")
     
     try:
         # Use gpt-4.0-mini for reliability
@@ -491,7 +491,7 @@ Style: {style}
 Return ONLY a JSON array with exactly {slide_count} objects. Each object must have:
 - title: Engaging title (5-8 words)
 - description: Informative description (1-2 sentences)
-- image_prompt: Description for Canva background image
+- image_prompt: Description for saystory background image
 - background_color: Hex color code (e.g., "#405DE6")
 - font_color: Hex color code (e.g., "#FFFFFF")
 
@@ -502,7 +502,7 @@ Make it professional and suitable for {platform} with {style} design."""
             messages=[
                 {
                     "role": "system", 
-                    "content": f"You are a professional Canva designer. Return ONLY a valid JSON array. No explanations."
+                    "content": f"You are a professional saystory designer. Return ONLY a valid JSON array. No explanations."
                 },
                 {"role": "user", "content": prompt}
             ],
@@ -551,7 +551,7 @@ Make it professional and suitable for {platform} with {style} design."""
                         'title': str(slide.get('title', f"{topic} - Part {i+1}")).strip(),
                         'description': str(slide.get('description', f"Learn about {topic}.")).strip(),
                         'image_prompt': str(slide.get('image_prompt', 
-                            f"Canva {platform} template with {style} style")).strip(),
+                            f"saystory {platform} template with {style} style")).strip(),
                         'background_color': validate_hex_color(slide.get('background_color', '#405DE6')),
                         'font_color': validate_hex_color(slide.get('font_color', '#FFFFFF'))
                     }
@@ -578,14 +578,14 @@ Make it professional and suitable for {platform} with {style} design."""
         return create_default_slides(topic, slide_count, platform, style)
 
 
-def generate_canva_image(prompt, platform, style, slide_id, bg_color=None, profile_image_path=None, brand_logo_path=None):
+def generate_saystory_image(prompt, platform, style, slide_id, bg_color=None, profile_image_path=None, brand_logo_path=None):
     """
-    Generate Canva-style background image using DALL-E 3
+    Generate saystory-style background image using GPT 3
     """
-    print(f"🎨 Generating Canva image: {prompt[:50]}...")
+    print(f"🎨 Generating saystory image: {prompt[:50]}...")
     
-    # Create enhanced prompt for DALL-E
-    canva_prompt = f"""Create a MINIMAL, CLEAN Canva template background for a {platform} carousel slide.
+    # Create enhanced prompt for GPT
+    saystory_prompt = f"""Create a MINIMAL, CLEAN saystory template background for a {platform} carousel slide.
 
 Theme: {prompt}
 Platform: {platform}
@@ -598,7 +598,7 @@ CRITICAL DESIGN REQUIREMENTS:
 - Small decorative elements only (abstract shapes, simple icons at edges)
 - NO busy patterns, NO cluttered details, NO photo-heavy content
 - Professional, modern, professional look
-- Looks like premium Canva template (simple and elegant)
+- Looks like premium saystory template (simple and elegant)
 - Text-friendly: center area completely clear for readable text
 - Use soft colors, gradients, or simple abstract geometric shapes
 - Minimize details to ensure text is always readable"""
@@ -606,7 +606,7 @@ CRITICAL DESIGN REQUIREMENTS:
     try:
         response = client.images.generate(
             model="gpt-image-1",
-            prompt=canva_prompt[:4000],
+            prompt=saystory_prompt[:4000],
             size="1024x1024",
             quality="auto",
             n=1
@@ -630,19 +630,19 @@ CRITICAL DESIGN REQUIREMENTS:
             image_b64 = None
 
         # Generate filename and path
-        filename = f"canva_slide_{slide_id}_{uuid.uuid4().hex[:8]}.png"
+        filename = f"saystory_slide_{slide_id}_{uuid.uuid4().hex[:8]}.png"
         filepath = os.path.join(settings.MEDIA_ROOT, filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
         if image_url:
-            print(f"✅ DALL-E image generated (URL)")
+            print(f"✅ GPT image generated (URL)")
             # Download image
             img_response = requests.get(image_url, timeout=30)
             img_response.raise_for_status()
             with open(filepath, 'wb') as f:
                 f.write(img_response.content)
         elif image_b64:
-            print(f"✅ DALL-E image generated (base64)")
+            print(f"✅ GPT image generated (base64)")
             import base64
             try:
                 image_bytes = base64.b64decode(image_b64)
@@ -746,7 +746,7 @@ CRITICAL DESIGN REQUIREMENTS:
 @csrf_exempt
 def generate_slide_image(request):
     """
-    Generate and apply Canva image to specific slide
+    Generate and apply saystory image to specific slide
     """
     if request.method == 'POST':
         try:
@@ -763,12 +763,12 @@ def generate_slide_image(request):
             slide = Slide.objects.get(id=slide_id)
             project = slide.project
             
-            print(f"\n🖼️ GENERATING CANVA IMAGE FOR SLIDE")
+            print(f"\n🖼️ GENERATING saystory IMAGE FOR SLIDE")
             print(f"📝 Slide: {slide.title}")
             print(f"🎨 Prompt: {prompt}")
             
-            # Generate Canva image with branding
-            image_filename = generate_canva_image(
+            # Generate saystory image with branding
+            image_filename = generate_saystory_image(
                 prompt,
                 project.platform,
                 project.style,
@@ -789,7 +789,7 @@ def generate_slide_image(request):
                     'image_url': f"{settings.MEDIA_URL}{image_filename}",
                     'filename': image_filename,
                     'slide_id': slide.id,
-                    'message': 'Canva image generated and applied successfully!'
+                    'message': 'saystory image generated and applied successfully!'
                 })
             else:
                 return JsonResponse({
@@ -832,11 +832,11 @@ Current slide: {slide.title} - {slide.description}
 Return a JSON object with:
 - title: New engaging title
 - description: New informative description
-- image_prompt: New prompt for Canva background
+- image_prompt: New prompt for saystory background
 - background_color: Hex color
 - font_color: Hex color
 
-Make it fresh and suitable for {project.platform} Canva template."""
+Make it fresh and suitable for {project.platform} saystory template."""
             
             response = client.chat.completions.create(
                 model="gpt-4.1-mini",
@@ -913,10 +913,10 @@ def update_slide(request):
                 slide.background_color = validate_hex_color(slide_data['background_color'])
             if 'font_color' in slide_data:
                 slide.font_color = validate_hex_color(slide_data['font_color'])
-            if 'canvas_width' in slide_data:
-                slide.canvas_width = int(slide_data['canvas_width'])
-            if 'canvas_height' in slide_data:
-                slide.canvas_height = int(slide_data['canvas_height'])
+            if 'saystorys_width' in slide_data:
+                slide.saystorys_width = int(slide_data['saystorys_width'])
+            if 'saystorys_height' in slide_data:
+                slide.saystorys_height = int(slide_data['saystorys_height'])
                 
             # Text Positioning
             if 'title_x' in slide_data and slide_data['title_x'] is not None: 
@@ -974,8 +974,8 @@ def update_slide(request):
                     'image_prompt': slide.image_prompt,
                     'background_color': slide.background_color,
                     'font_color': slide.font_color,
-                    'canvas_width': slide.canvas_width,
-                    'canvas_height': slide.canvas_height,
+                    'saystorys_width': slide.saystorys_width,
+                    'saystorys_height': slide.saystorys_height,
                     'title_x': slide.title_x,
                     'title_y': slide.title_y,
                     'description_x': slide.description_x,
@@ -1026,7 +1026,7 @@ def generate_all_images(request):
                     
                     print(f"🎨 Generating image for Slide {slide.slide_number}...")
                     
-                    image_filename = generate_canva_image(
+                    image_filename = generate_saystory_image(
                         slide.image_prompt,
                         project.platform,
                         project.style,
@@ -1079,8 +1079,8 @@ def get_project_slides(request, project_id):
                 'image_prompt': slide.image_prompt,
                 'background_color': slide.background_color,
                 'font_color': slide.font_color,
-                'canvas_width': slide.canvas_width,
-                'canvas_height': slide.canvas_height,
+                'saystorys_width': slide.saystorys_width,
+                'saystorys_height': slide.saystorys_height,
                 'generated_image': slide.generated_image
             }
             
@@ -1129,7 +1129,7 @@ def test_openai(request):
             response = client.chat.completions.create(
                 model="gpt-4.1-mini",
                 messages=[
-                    {"role": "user", "content": "Say 'Canva Carousel Generator is working!'"}
+                    {"role": "user", "content": "Say 'saystory Carousel Generator is working!'"}
                 ],
                 max_tokens=50
             )
@@ -1223,10 +1223,10 @@ def generate_and_apply_image(request):
             print(f"📝 Slide: {slide.title}")
             print(f"🧾 Description: {description}")
 
-            # Build a Canva-friendly prompt from user description
-            prompt = f"Canva-style minimal background for: {description}. Make it clean, leave a clear center area for text, flat/vector style, subtle colors."
+            # Build a saystory-friendly prompt from user description
+            prompt = f"saystory-style minimal background for: {description}. Make it clean, leave a clear center area for text, flat/vector style, subtle colors."
 
-            image_filename = generate_canva_image(
+            image_filename = generate_saystory_image(
                 prompt,
                 project.platform,
                 project.style,
@@ -1281,7 +1281,7 @@ def add_slide(request):
             next_slide_number = (last_slide.slide_number + 1) if last_slide else 1
 
             # Get platform dimensions
-            canvas_width, canvas_height = get_platform_dimensions(project.platform)
+            saystorys_width, saystorys_height = get_platform_dimensions(project.platform)
 
             # Create new slide with default values
             slide = Slide.objects.create(
@@ -1293,8 +1293,8 @@ def add_slide(request):
                 image_prompt="",
                 background_color="#FFFFFF",
                 font_color="#000000",
-                canvas_width=canvas_width,
-                canvas_height=canvas_height
+                saystorys_width=saystorys_width,
+                saystorys_height=saystorys_height
             )
 
             print(f"✅ New slide added: {slide.title} (ID: {slide.id})")
@@ -1310,8 +1310,8 @@ def add_slide(request):
                     'image_prompt': slide.image_prompt,
                     'background_color': slide.background_color,
                     'font_color': slide.font_color,
-                    'canvas_width': slide.canvas_width,
-                    'canvas_height': slide.canvas_height,
+                    'saystorys_width': slide.saystorys_width,
+                    'saystorys_height': slide.saystorys_height,
                     'generated_image': slide.generated_image
                 },
                 'message': 'New slide added successfully'

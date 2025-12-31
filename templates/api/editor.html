@@ -37,7 +37,7 @@
         object-fit: cover;
     }
 
-    .canvas-container {
+    .saystorys-container {
         position: relative;
         background: #f5f5f5;
         border-radius: var(--border-radius);
@@ -891,7 +891,7 @@
         border-top: 2px solid var(--gray-200);
     }
 
-    /* ========== MAIN EDITOR CANVAS ========== */
+    /* ========== MAIN EDITOR saystoryS ========== */
     .editor-main {
         display: flex;
         flex-direction: column;
@@ -985,7 +985,7 @@
         transform: translateY(0);
     }
 
-    .canvas-container {
+    .saystorys-container {
         flex: 1;
         background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         border-radius: 0;
@@ -1584,7 +1584,7 @@
             flex-wrap: wrap;
         }
 
-        .canvas-container {
+        .saystorys-container {
             min-height: 400px;
         }
 
@@ -1621,7 +1621,7 @@
             font-size: 0.75rem;
         }
 
-        .canvas-container {
+        .saystorys-container {
             min-height: 300px;
         }
 
@@ -1650,8 +1650,8 @@
         margin-bottom: 1.5rem;
     }
 
-    /* Canvas container adjustments */
-    .canvas-container {
+    /* saystorys container adjustments */
+    .saystorys-container {
         position: relative;
         background: white;
         border-radius: var(--border-radius);
@@ -1754,7 +1754,7 @@
         </div>
     </div>
 
-    <!-- Main Editor - Center Canvas -->
+    <!-- Main Editor - Center saystorys -->
     <div class="editor-main">
         <div class="editor-header">
             <div class="editor-nav">
@@ -1778,7 +1778,7 @@
             </div>
         </div>
 
-        <div class="canvas-container">
+        <div class="saystorys-container">
             <div id="konvaContainer"></div>
             <div id="emptyState" class="empty-state">
                 <i class="fas fa-layer-group"></i>
@@ -1959,7 +1959,7 @@
                     <button id="addExtraTextBtn" class="btn btn-secondary w-100 mb-2">
                         <i class="fas fa-plus"></i> Add Text Block
                     </button>
-                    <div class="form-hint">Double click text on canvas to edit content</div>
+                    <div class="form-hint">Double click text on saystorys to edit content</div>
 
                     <!-- Selected Text Controls (Dynamic) -->
                     <!-- Selected Text Controls (Dynamic) -->
@@ -2075,17 +2075,19 @@
 
 
             <div class="properties-section">
-                <h5>Canvas Settings</h5>
+                <h5>saystorys Settings</h5>
                 <div class="form-group">
                     <label>Width (px)</label>
-                    <input type="number" id="canvasWidth" placeholder="1080" class="form-control" min="100" max="4000">
+                    <input type="number" id="saystorysWidth" placeholder="1080" class="form-control" min="100"
+                        max="4000">
                 </div>
                 <div class="form-group">
                     <label>Height (px)</label>
-                    <input type="number" id="canvasHeight" placeholder="1080" class="form-control" min="100" max="4000">
+                    <input type="number" id="saystorysHeight" placeholder="1080" class="form-control" min="100"
+                        max="4000">
                 </div>
-                <button id="updateCanvasSize" class="btn btn-secondary">
-                    <i class="fas fa-expand"></i> Update Canvas
+                <button id="updatesaystorysSize" class="btn btn-secondary">
+                    <i class="fas fa-expand"></i> Update saystorys
                 </button>
             </div>
 
@@ -2525,9 +2527,9 @@
                 extra_texts: slide.extra_texts, // Send list
                 user_images: slide.user_images, // Send user images
 
-                // Canvas
-                canvas_width: slide.canvas_width,
-                canvas_height: slide.canvas_height,
+                // saystorys
+                saystorys_width: slide.saystorys_width,
+                saystorys_height: slide.saystorys_height,
 
                 // Positions
                 title_x: slide.title_x,
@@ -2618,16 +2620,16 @@
         }
 
         fitStageToContainer() {
-            const container = document.querySelector('.canvas-container');
+            const container = document.querySelector('.saystorys-container');
             if (!container) return;
 
             const containerWidth = container.clientWidth - 40; // padding/margin buffer
             const containerHeight = container.clientHeight - 40; // padding/margin buffer
 
             // Get slide dimensions
-            const slide = this.slides[this.currentSlide] || { canvas_width: 1080, canvas_height: 1080 };
-            const sceneWidth = slide.canvas_width || 1080;
-            const sceneHeight = slide.canvas_height || 1080;
+            const slide = this.slides[this.currentSlide] || { saystorys_width: 1080, saystorys_height: 1080 };
+            const sceneWidth = slide.saystorys_width || 1080;
+            const sceneHeight = slide.saystorys_height || 1080;
 
             // Calculate scale to fit
             const scale = Math.min(
@@ -2691,9 +2693,9 @@
 
             console.log('🧹 Layer cleared and transformer re-added');
 
-            const width = slide.canvas_width || 1080;
-            const height = slide.canvas_height || 1080;
-            console.log('📐 Canvas dimensions:', width, 'x', height);
+            const width = slide.saystorys_width || 1080;
+            const height = slide.saystorys_height || 1080;
+            console.log('📐 saystorys dimensions:', width, 'x', height);
 
             // Fit stage to container
             this.fitStageToContainer();
@@ -3027,8 +3029,8 @@
                     { id: 'imagePrompt', value: slide.image_prompt || '' }, // Also populate the generate field
                     { id: 'bgColor', value: slide.background_color || '#FFFFFF' },
                     { id: 'fontColor', value: slide.font_color || '#000000' },
-                    { id: 'canvasWidth', value: slide.canvas_width || 1080 },
-                    { id: 'canvasHeight', value: slide.canvas_height || 1080 }
+                    { id: 'saystorysWidth', value: slide.saystorys_width || 1080 },
+                    { id: 'saystorysHeight', value: slide.saystorys_height || 1080 }
                 ];
 
                 fields.forEach(field => {
@@ -3184,7 +3186,7 @@
 
         makeEditable(textNode, fieldName) {
             // Keep existing logic but use EditTextNode if generalized
-            // For now standard nodes use input fields, extra texts use double click canvas edit
+            // For now standard nodes use input fields, extra texts use double click saystorys edit
             textNode.on('dblclick dbltap', () => {
                 // If it's a standard node, maybe focus the sidebar input?
                 const inputId = fieldName === 'title' ? 'slideTitle' : (fieldName === 'description' ? 'slideDescription' : null);
@@ -3465,7 +3467,7 @@
 
                     const slide = this.slides[this.currentSlide];
 
-                    toastr.info('Generating Canva-style image...');
+                    toastr.info('Generating saystory-style image...');
 
                     try {
                         const response = await fetch('/api/generate-and-apply/', {
@@ -3500,7 +3502,7 @@
                             await this.renderSlide(this.currentSlide);
                             this.renderSlidesList();
 
-                            toastr.success('Canva image generated and applied to slide!');
+                            toastr.success('saystory image generated and applied to slide!');
                         } else {
                             toastr.error(data.error || 'Failed to generate image');
                         }
@@ -3643,7 +3645,7 @@
                             if (field.target === 'extraText') this.slides[this.currentSlide].extra_text = newVal;
                         }
 
-                        // 2. Update Canvas immediately
+                        // 2. Update saystorys immediately
                         if (this.layer) {
                             const node = this.layer.findOne(`.${field.target}`);
                             // Also try name selector if class selector fails (Konva names are not classes)
@@ -3668,7 +3670,7 @@
                                 // But for performance, let's just try to update via renderSlide for now if node missing
                                 // or just wait for debounce save?
                                 // Let's rely on renderSlide if node is missing (new text added).
-                                // But reusing renderSlide kills input focus? NO, input is outside canvas.
+                                // But reusing renderSlide kills input focus? NO, input is outside saystorys.
                                 // So renderSlide is safe.
                                 if (field.target === 'extraText' && !nodeByName) {
                                     this.renderSlide(this.currentSlide);
@@ -3694,7 +3696,7 @@
                 }
             });
 
-            // Specific handler for Image Prompt (no canvas update needed, just save)
+            // Specific handler for Image Prompt (no saystorys update needed, just save)
             const promptField = document.getElementById('slideImagePrompt');
             if (promptField) {
                 promptField.addEventListener('input', (e) => {
@@ -3758,12 +3760,12 @@
                         // Force immediate list update
                         this.renderSlidesList();
 
-                        // Try to render canvas, but don't fail entire operation if it errors
+                        // Try to render saystorys, but don't fail entire operation if it errors
                         try {
                             await this.renderSlide(this.currentSlide);
                             this.updateUIControls(data.slide, this.currentSlide);
                         } catch (renderError) {
-                            console.error('Error rendering new slide canvas:', renderError);
+                            console.error('Error rendering new slide saystorys:', renderError);
                             toastr.warning('Slide added but preview might be incomplete');
                         }
 
@@ -3779,10 +3781,10 @@
                 }
             });
 
-            // Update canvas size
-            document.getElementById('updateCanvasSize').addEventListener('click', async () => {
-                const width = parseInt(document.getElementById('canvasWidth').value);
-                const height = parseInt(document.getElementById('canvasHeight').value);
+            // Update saystorys size
+            document.getElementById('updatesaystorysSize').addEventListener('click', async () => {
+                const width = parseInt(document.getElementById('saystorysWidth').value);
+                const height = parseInt(document.getElementById('saystorysHeight').value);
 
                 if (!width || !height || width < 100 || height < 100 || width > 4000 || height > 4000) {
                     toastr.error('Please enter valid dimensions (100-4000px)');
@@ -3791,8 +3793,8 @@
 
                 if (this.slides[this.currentSlide]) {
                     const slide = this.slides[this.currentSlide];
-                    slide.canvas_width = width;
-                    slide.canvas_height = height;
+                    slide.saystorys_width = width;
+                    slide.saystorys_height = height;
 
                     // Update via API
                     try {
@@ -3805,8 +3807,8 @@
                             body: JSON.stringify({
                                 slide_id: slide.id,
                                 slide_data: {
-                                    canvas_width: width,
-                                    canvas_height: height
+                                    saystorys_width: width,
+                                    saystorys_height: height
                                 }
                             })
                         });
@@ -3815,13 +3817,13 @@
                         if (data.success) {
                             // Re-render with new dimensions
                             await this.renderSlide(this.currentSlide);
-                            toastr.success('Canvas size updated');
+                            toastr.success('saystorys size updated');
                         } else {
-                            toastr.error(data.error || 'Failed to update canvas size');
+                            toastr.error(data.error || 'Failed to update saystorys size');
                         }
                     } catch (error) {
-                        console.error('Error updating canvas size:', error);
-                        toastr.error('Failed to update canvas size');
+                        console.error('Error updating saystorys size:', error);
+                        toastr.error('Failed to update saystorys size');
                     }
                 }
             });
@@ -3834,8 +3836,8 @@
                 // Get dimensions from utils
                 const dimensions = this.getPlatformDimensions(platform, format);
 
-                document.getElementById('canvasWidth').value = dimensions.width;
-                document.getElementById('canvasHeight').value = dimensions.height;
+                document.getElementById('saystorysWidth').value = dimensions.width;
+                document.getElementById('saystorysHeight').value = dimensions.height;
 
                 toastr.info(`Applied ${platform} ${format} template (${dimensions.width}×${dimensions.height})`);
             });
@@ -3923,7 +3925,7 @@
                 // Update Button State
                 btn.classList.toggle('active');
 
-                // Update Canvas Node
+                // Update saystorys Node
                 const node = this.layer.findOne('.' + target) || this.layer.findOne(`[name="${target}"]`);
                 if (node) {
                     node.setAttr(property, newValue);
@@ -4203,7 +4205,7 @@
             textNode.hide();
             this.layer.draw();
 
-            // Create textarea over canvas
+            // Create textarea over saystorys
             const textPosition = textNode.absolutePosition();
             const stageBox = this.stage.container().getBoundingClientRect();
             const areaPosition = {

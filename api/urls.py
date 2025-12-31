@@ -10,7 +10,7 @@ urlpatterns = [
     path('result/<int:project_id>/', views.result, name='result'),
     
     # API Endpoints
-    path('api/generate-carousel/', views.generate_canva_carousel, name='generate_carousel'),
+    path('api/generate-carousel/', views.generate_saystory_carousel, name='generate_carousel'),
     path('api/generate-image/', views.generate_slide_image, name='generate_image'),
     path('api/generate-and-apply/', views.generate_and_apply_image, name='generate_and_apply_image'),
     path('api/regenerate-slide/', views.regenerate_slide_content, name='regenerate_slide'),
