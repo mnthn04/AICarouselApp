@@ -71,6 +71,7 @@ def editor(request, project_id=None):
                     'canvas_height': slide.canvas_height,
                     'generated_image': slide.generated_image,
                     'extra_text': slide.extra_text,
+                    'extra_texts': slide.extra_texts, # Pass list of texts
                     'text_styles': slide.text_styles, # Pass styles to frontend
                     'title_x': slide.title_x,
                     'title_y': slide.title_y,
@@ -942,6 +943,14 @@ def update_slide(request):
                 else:
                     slide.text_styles = styles
             
+            if 'extra_texts' in slide_data:
+                # Ensure it's stored as string
+                eterms = slide_data['extra_texts']
+                if isinstance(eterms, list):
+                    slide.extra_texts = json.dumps(eterms)
+                else:
+                    slide.extra_texts = eterms
+
             slide.save()
             
             return JsonResponse({

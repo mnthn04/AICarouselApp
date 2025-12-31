@@ -1789,9 +1789,12 @@
                         class="form-control"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Extra Text</label>
-                    <textarea id="slideExtraText" placeholder="Additional custom text (optional)" rows="2"
-                        class="form-control"></textarea>
+                    <label class="form-label">Extra Text</label>
+
+                    <button id="addExtraTextBtn" class="btn btn-secondary w-100 mb-2">
+                        <i class="fas fa-plus"></i> Add Text Block
+                    </button>
+                    <div class="form-hint">Double click text on canvas to edit content</div>
                 </div>
                 <div class="form-group">
                     <label>Image Prompt</label>
@@ -1828,6 +1831,37 @@
             <!-- Text Controls Section -->
             <div class="text-controls-section">
                 <h4><i class="fas fa-font"></i> Text Controls</h4>
+
+                <!-- Selected Text Controls (Dynamic) -->
+                <div class="control-group" id="selectedTextControls"
+                    style="display:none; background: rgba(99, 102, 241, 0.05); border: 1px solid var(--primary);">
+                    <h5 style="color: var(--primary);"><i class="fas fa-mouse-pointer"></i> Selected Text</h5>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Color</label>
+                            <input type="color" id="selectedColor" value="#000000">
+                        </div>
+                        <div class="control-item">
+                            <label>Size</label>
+                            <input type="range" id="selectedFontSize" min="12" max="120" value="24" step="1">
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <div class="control-item">
+                            <label>Font Family</label>
+                            <select id="selectedFontFamily">
+                                <option value="Arial">Arial</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Poppins">Poppins</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Montserrat">Montserrat</option>
+                                <option value="Roboto">Roboto</option>
+                                <option value="Open Sans">Open Sans</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Title Controls -->
                 <div class="control-group">
@@ -2021,6 +2055,7 @@
             this.scale = 1;
             this.autoSaveTimeout = null;
             this.isInitialized = false;
+            this.activeTextTarget = null; // Stores the name of the currently selected text node for styling
         }
 
         debouncedSave() {
@@ -2108,6 +2143,18 @@
                         } else if (!slide.text_styles) {
                             slide.text_styles = {};
                         }
+
+                        // Parse extra_texts if string
+                        if (slide.extra_texts && typeof slide.extra_texts === 'string') {
+                            try {
+                                slide.extra_texts = JSON.parse(slide.extra_texts);
+                            } catch (e) {
+                                slide.extra_texts = [];
+                            }
+                        } else if (!slide.extra_texts) {
+                            slide.extra_texts = [];
+                        }
+
                         return slide;
                     });
                     this.project = data.project; // Store project data
@@ -2309,7 +2356,6 @@
             const textData = {
                 title: document.getElementById('slideTitle')?.value || slide.title || '',
                 description: document.getElementById('slideDescription')?.value || slide.description || '',
-                extra_text: document.getElementById('slideExtraText')?.value || slide.extra_text || '',
                 image_prompt: document.getElementById('slideImagePrompt')?.value || slide.image_prompt || ''
             };
 
@@ -2326,11 +2372,7 @@
                     slide.description_x = Math.round(descNode.x());
                     slide.description_y = Math.round(descNode.y());
                 }
-                const extraNode = this.layer.findOne('.extraText');
-                if (extraNode) {
-                    slide.extra_text_x = Math.round(extraNode.x());
-                    slide.extra_text_y = Math.round(extraNode.y());
-                }
+                // For dynamically added extra_texts, their positions are updated in addDragSnapping
             }
 
             // 3. Update local slide object with text data
@@ -2341,13 +2383,14 @@
             const fullSlideData = {
                 title: slide.title,
                 description: slide.description,
-                extra_text: slide.extra_text,
                 image_prompt: slide.image_prompt,
+                extra_text: '', // CRITICAL: Explicitly clear legacy field to prevent re-migration loops in renderSlide
 
                 // Styles
                 background_color: slide.background_color,
                 font_color: slide.font_color,
                 text_styles: slide.text_styles, // Send granular styles
+                extra_texts: slide.extra_texts, // Send list
 
                 // Canvas
                 canvas_width: slide.canvas_width,
@@ -2358,12 +2401,6 @@
                 title_y: slide.title_y,
                 description_x: slide.description_x,
                 description_y: slide.description_y,
-                extra_text_x: slide.extra_text_x,
-                extra_text_y: slide.extra_text_y,
-
-                // Extra Style Props (if we start tracking them in the model)
-                // For now, these might be missing from the Django model if not added yet.
-                // But let's send what we have.
             };
 
             // Update slides list display to reflect title changes
@@ -2396,6 +2433,9 @@
                     // Ensure text_styles is parsed if it comes back as a string
                     if (typeof slide.text_styles === 'string') {
                         slide.text_styles = JSON.parse(slide.text_styles);
+                    }
+                    if (typeof slide.extra_texts === 'string') {
+                        slide.extra_texts = JSON.parse(slide.extra_texts);
                     }
                     console.log('Slide auto-saved successfully');
                 } else {
@@ -2489,11 +2529,34 @@
                     slide.text_styles = {};
                 }
             }
+            // Ensure extra_texts is an array
+            if (!slide.extra_texts || typeof slide.extra_texts === 'string') {
+                try {
+                    slide.extra_texts = slide.extra_texts ? JSON.parse(slide.extra_texts) : [];
+                } catch (e) {
+                    console.error("Failed to parse extra_texts, initializing as empty array:", e);
+                    slide.extra_texts = [];
+                }
+            }
             console.log('🎨 Rendering slide:', slideIndex, 'Slide data:', slide);
 
-            // Clear the layer
+            // Clear the layer but keep transformer if possible? 
+            // Actually destroyChildren destroys everything including transformer.
+            // We must re-add it.
             this.layer.destroyChildren();
-            console.log('🧹 Layer cleared');
+
+            // Re-add transformer
+            this.transformer = new Konva.Transformer({
+                rotateEnabled: true,
+                borderStroke: '#6366f1',
+                borderStrokeWidth: 2,
+                anchorStroke: '#6366f1',
+                anchorFill: 'white',
+                anchorSize: 10
+            });
+            this.layer.add(this.transformer);
+
+            console.log('🧹 Layer cleared and transformer re-added');
 
             const width = slide.canvas_width || 1080;
             const height = slide.canvas_height || 1080;
@@ -2584,30 +2647,30 @@
                 description.offsetX(description.width() / 2);
             }
 
-            // Create extra text (if provided)
-            let extraText = null;
-            if (slide.extra_text && slide.extra_text.trim()) {
-                extraText = new Konva.Text({
-                    x: slide.extra_text_x !== null && slide.extra_text_x !== undefined ? slide.extra_text_x : width / 2,
-                    y: slide.extra_text_y !== null && slide.extra_text_y !== undefined ? slide.extra_text_y : height / 2 + 80,
+            // Migrate legacy extra_text to extra_texts array if it exists and array is empty
+            if (slide.extra_text && slide.extra_text.trim() && (!slide.extra_texts || slide.extra_texts.length === 0)) {
+                const newId = Date.now().toString();
+                slide.extra_texts = [{
+                    id: newId,
                     text: slide.extra_text,
-                    fontSize: 18,
-                    fontFamily: 'Inter',
-                    fill: slide.font_color || '#000000',
-                    align: 'center',
-                    width: width * 0.8,
-                    padding: 10,
-                    lineHeight: 1.3,
-                    shadowColor: 'rgba(0,0,0,0.2)',
-                    shadowBlur: 2,
-                    shadowOffset: { x: 1, y: 1 },
-                    shadowOpacity: 0.4,
-                    name: 'extraText',
-                    draggable: true
+                    x: slide.extra_text_x || width / 2,
+                    y: slide.extra_text_y || height / 2 + 80,
+                    styles: {
+                        fontSize: 18,
+                        fontFamily: 'Inter',
+                        fill: slide.font_color || '#000000',
+                        align: 'center',
+                        width: width * 0.8
+                    }
+                }];
+                slide.extra_text = ''; // Clear legacy to prevent re-migration
+            }
+
+            // Render Additional Extra Texts
+            if (slide.extra_texts && Array.isArray(slide.extra_texts)) {
+                slide.extra_texts.forEach((textItem) => {
+                    this.renderExtraTextItem(textItem);
                 });
-                if (slide.extra_text_x === null || slide.extra_text_x === undefined) {
-                    extraText.offsetX(extraText.width() / 2);
-                }
             }
 
             // Add branding elements if project has them
@@ -2674,25 +2737,17 @@
 
             // Add text to layer
             const textElements = [title, description];
-            if (extraText) {
-                textElements.push(extraText);
-            }
             this.layer.add(...textElements);
             console.log('📝 Text elements added');
 
             // Add drag snapping
             this.addDragSnapping(title);
             this.addDragSnapping(description);
-            if (extraText) {
-                this.addDragSnapping(extraText);
-            }
 
             // Make text editable
             this.makeEditable(title, 'title');
             this.makeEditable(description, 'description');
-            if (extraText) {
-                this.makeEditable(extraText, 'extraText');
-            }
+
             // Apply persisted styles
             this.applyStoredStyles();
 
@@ -2712,7 +2767,7 @@
             if (!slide || !slide.text_styles) return;
 
             const styles = slide.text_styles;
-            const nodes = ['title', 'description', 'extraText'];
+            const nodes = ['title', 'description']; // Removed 'extraText'
 
             nodes.forEach(name => {
                 const nodeStyles = styles[name];
@@ -2810,7 +2865,6 @@
                 const fields = [
                     { id: 'slideTitle', value: slide.title || '' },
                     { id: 'slideDescription', value: slide.description || '' },
-                    { id: 'slideExtraText', value: slide.extra_text || '' },
                     { id: 'slideImagePrompt', value: slide.image_prompt || '' },
                     { id: 'imagePrompt', value: slide.image_prompt || '' }, // Also populate the generate field
                     { id: 'bgColor', value: slide.background_color || '#FFFFFF' },
@@ -2932,88 +2986,21 @@
         }
 
         makeEditable(textNode, fieldName) {
-            textNode.on('dblclick', () => {
-                const textPosition = textNode.absolutePosition();
-                const stageBox = this.stage.container().getBoundingClientRect();
+            // Keep existing logic but use EditTextNode if generalized
+            // For now standard nodes use input fields, extra texts use double click canvas edit
+            textNode.on('dblclick dbltap', () => {
+                // If it's a standard node, maybe focus the sidebar input?
+                const inputId = fieldName === 'title' ? 'slideTitle' : (fieldName === 'description' ? 'slideDescription' : null);
+                if (inputId) {
+                    const input = document.getElementById(inputId);
+                    if (input) input.focus();
+                }
+            });
 
-                const areaPosition = {
-                    x: stageBox.left + textPosition.x,
-                    y: stageBox.top + textPosition.y
-                };
-
-                const textarea = document.createElement('textarea');
-                document.body.appendChild(textarea);
-
-                textarea.value = textNode.text();
-                textarea.style.position = 'absolute';
-                textarea.style.top = areaPosition.y + 'px';
-                textarea.style.left = areaPosition.x + 'px';
-                textarea.style.width = textNode.width() + 'px';
-                textarea.style.height = textNode.height() + 'px';
-                textarea.style.fontSize = textNode.fontSize() + 'px';
-                textarea.style.border = '2px solid #6366f1';
-                textarea.style.padding = '5px';
-                textarea.style.margin = '0px';
-                textarea.style.overflow = 'hidden';
-                textarea.style.background = 'white';
-                textarea.style.outline = 'none';
-                textarea.style.resize = 'none';
-                textarea.style.lineHeight = textNode.lineHeight();
-                textarea.style.fontFamily = textNode.fontFamily();
-                textarea.style.transformOrigin = 'left top';
-                textarea.style.textAlign = textNode.align();
-                textarea.style.color = textNode.fill();
-                textarea.style.zIndex = '1000';
-                textarea.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                textarea.focus();
-
-                const transform = textNode.getAbsoluteTransform().copy();
-                transform.invert();
-                const textareaOffset = transform.point(textNode.offset());
-
-                textarea.style.top = (areaPosition.y - textareaOffset.y) + 'px';
-                textarea.style.left = (areaPosition.x - textareaOffset.x) + 'px';
-
-                const removeTextarea = () => {
-                    textarea.removeEventListener('blur', removeTextarea);
-                    textarea.remove();
-                    window.removeEventListener('click', handleOutsideClick);
-
-                    // Update slide data
-                    const newText = textarea.value;
-                    if (fieldName === 'title') {
-                        this.slides[this.currentSlide].title = newText;
-                    } else if (fieldName === 'description') {
-                        this.slides[this.currentSlide].description = newText;
-                    } else if (fieldName === 'extraText') {
-                        this.slides[this.currentSlide].extra_text = newText;
-                    }
-                    textNode.text(newText);
-
-                    // Update form field
-                    if (fieldName === 'title') {
-                        document.getElementById('slideTitle').value = newText;
-                    } else if (fieldName === 'description') {
-                        document.getElementById('slideDescription').value = newText;
-                    } else if (fieldName === 'extraText') {
-                        document.getElementById('slideExtraText').value = newText;
-                    }
-
-                    this.layer.batchDraw();
-                    toastr.success(`${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} updated`);
-                };
-
-                textarea.addEventListener('blur', removeTextarea);
-
-                const handleOutsideClick = (e) => {
-                    if (e.target !== textarea) {
-                        removeTextarea();
-                    }
-                };
-
-                setTimeout(() => {
-                    window.addEventListener('click', handleOutsideClick);
-                });
+            // Selection logic for standard nodes too
+            textNode.on('click tap', () => {
+                this.selectTextNode(textNode, null); // null itemData implies standard node
+                this.activeTextTarget = fieldName;
             });
         }
 
@@ -3059,45 +3046,71 @@
 
             document.getElementById('fontColor').addEventListener('change', (e) => {
                 if (this.slides[this.currentSlide]) {
-                    this.slides[this.currentSlide].font_color = e.target.value;
-                    // Also update text_styles for all text elements if they don't have specific overrides
+                    const newColor = e.target.value;
                     const slide = this.slides[this.currentSlide];
+                    slide.font_color = newColor; // Update general font color
+
                     if (!slide.text_styles) slide.text_styles = {};
-                    ['title', 'description', 'extraText'].forEach(target => {
-                        if (!slide.text_styles[target] || !slide.text_styles[target].fill) {
-                            if (!slide.text_styles[target]) slide.text_styles[target] = {};
-                            slide.text_styles[target].fill = e.target.value;
+
+                    if (this.activeTextTarget) {
+                        // Apply to specific selected node
+                        if (this.activeTextTarget.startsWith('extra_text_')) {
+                            const id = this.activeTextTarget.replace('extra_text_', '');
+                            const item = slide.extra_texts.find(t => t.id === id);
+                            if (item) {
+                                if (!item.styles) item.styles = {};
+                                item.styles.fill = newColor;
+                            }
+                        } else {
+                            // Apply to standard node (title, description, extraText)
+                            if (!slide.text_styles[this.activeTextTarget]) slide.text_styles[this.activeTextTarget] = {};
+                            slide.text_styles[this.activeTextTarget].fill = newColor;
                         }
-                    });
+                    } else {
+                        // If no specific node selected, apply to all standard nodes if they don't have specific overrides
+                        ['title', 'description', 'extraText'].forEach(target => {
+                            if (!slide.text_styles[target] || !slide.text_styles[target].fill) {
+                                if (!slide.text_styles[target]) slide.text_styles[target] = {};
+                                slide.text_styles[target].fill = newColor;
+                            }
+                        });
+                    }
                     this.renderSlide(this.currentSlide);
                     toastr.info('Font color updated');
                 }
             });
 
             document.getElementById('fontFamily').addEventListener('change', (e) => {
-                if (this.layer && this.layer.children.length > 1) {
-                    const textNodes = this.layer.children.filter(child =>
-                        child.className === 'Text' && (child.name() === 'title' || child.name() === 'description')
-                    );
-                    textNodes.forEach(node => {
-                        node.fontFamily(e.target.value);
-                    });
+                if (this.slides[this.currentSlide]) {
+                    const newFontFamily = e.target.value;
+                    const slide = this.slides[this.currentSlide];
 
-                    // Update local state
-                    if (this.slides[this.currentSlide]) {
-                        // This is a general font family, so it should update the default or specific if not overridden
-                        const slide = this.slides[this.currentSlide];
-                        if (!slide.text_styles) slide.text_styles = {};
+                    if (!slide.text_styles) slide.text_styles = {};
+
+                    if (this.activeTextTarget) {
+                        // Apply to specific selected node
+                        if (this.activeTextTarget.startsWith('extra_text_')) {
+                            const id = this.activeTextTarget.replace('extra_text_', '');
+                            const item = slide.extra_texts.find(t => t.id === id);
+                            if (item) {
+                                if (!item.styles) item.styles = {};
+                                item.styles.fontFamily = newFontFamily;
+                            }
+                        } else {
+                            // Apply to standard node (title, description, extraText)
+                            if (!slide.text_styles[this.activeTextTarget]) slide.text_styles[this.activeTextTarget] = {};
+                            slide.text_styles[this.activeTextTarget].fontFamily = newFontFamily;
+                        }
+                    } else {
+                        // If no specific node selected, apply to all standard nodes if they don't have specific overrides
                         ['title', 'description', 'extraText'].forEach(target => {
                             if (!slide.text_styles[target] || !slide.text_styles[target].fontFamily) {
                                 if (!slide.text_styles[target]) slide.text_styles[target] = {};
-                                slide.text_styles[target].fontFamily = e.target.value;
+                                slide.text_styles[target].fontFamily = newFontFamily;
                             }
                         });
                     }
-
-                    this.layer.batchDraw();
-                    this.debouncedSave();
+                    this.renderSlide(this.currentSlide);
                     toastr.info('Font family updated');
                 }
             });
@@ -3220,6 +3233,9 @@
                         if (typeof slide.text_styles === 'string') {
                             slide.text_styles = JSON.parse(slide.text_styles);
                         }
+                        if (typeof slide.extra_texts === 'string') {
+                            slide.extra_texts = JSON.parse(slide.extra_texts);
+                        }
                         this.renderSlide(this.currentSlide);
                         this.renderSlidesList();
                         toastr.success('Slide regenerated with AI!');
@@ -3313,6 +3329,7 @@
                                     background_color: slide.background_color,
                                     font_color: slide.font_color,
                                     text_styles: slide.text_styles, // Include text_styles
+                                    extra_texts: slide.extra_texts, // Include extra_texts
 
                                     // Add coordinates
                                     title_x: slide.title_x,
@@ -3368,7 +3385,8 @@
                                         image_prompt: slide.image_prompt,
                                         background_color: slide.background_color,
                                         font_color: slide.font_color,
-                                        text_styles: slide.text_styles // Include text_styles
+                                        text_styles: slide.text_styles, // Include text_styles
+                                        extra_texts: slide.extra_texts // Include extra_texts
                                     }
                                 })
                             });
@@ -3423,6 +3441,9 @@
                     if (typeof this.slides[this.currentSlide].text_styles === 'string') {
                         this.slides[this.currentSlide].text_styles = JSON.parse(this.slides[this.currentSlide].text_styles);
                     }
+                    if (typeof this.slides[this.currentSlide].extra_texts === 'string') {
+                        this.slides[this.currentSlide].extra_texts = JSON.parse(this.slides[this.currentSlide].extra_texts);
+                    }
                     this.renderSlide(this.currentSlide);
                     this.renderSlidesList();
                     toastr.info('Undo applied');
@@ -3438,17 +3459,57 @@
                     if (typeof this.slides[this.currentSlide].text_styles === 'string') {
                         this.slides[this.currentSlide].text_styles = JSON.parse(this.slides[this.currentSlide].text_styles);
                     }
+                    if (typeof this.slides[this.currentSlide].extra_texts === 'string') {
+                        this.slides[this.currentSlide].extra_texts = JSON.parse(this.slides[this.currentSlide].extra_texts);
+                    }
                     this.renderSlide(this.currentSlide);
                     this.renderSlidesList();
                     toastr.info('Redo applied');
                 }
             });
 
+            // Add Extra Text Button Listeners
+            const AddExtraBtn = document.getElementById('addExtraTextBtn');
+            if (AddExtraBtn) {
+                AddExtraBtn.addEventListener('click', () => {
+                    this.addExtraText();
+                });
+            }
+
+            // Listeners for Selected Text Controls (Debounced)
+            const selectedColor = document.getElementById('selectedColor');
+            if (selectedColor) {
+                let debounceTimer;
+                selectedColor.addEventListener('input', (e) => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        this.applyStyleToActiveTarget('fill', e.target.value);
+                    }, 50);
+                });
+            }
+
+            const selectedFontSize = document.getElementById('selectedFontSize');
+            if (selectedFontSize) {
+                let debounceTimer;
+                selectedFontSize.addEventListener('input', (e) => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        this.applyStyleToActiveTarget('fontSize', parseInt(e.target.value));
+                    }, 50);
+                });
+            }
+
+            const selectedFontFamily = document.getElementById('selectedFontFamily');
+            if (selectedFontFamily) {
+                selectedFontFamily.addEventListener('change', (e) => {
+                    this.applyStyleToActiveTarget('fontFamily', e.target.value);
+                });
+            }
+
             // Auto-save slide content and dynamic update
             const textFields = [
                 { id: 'slideTitle', target: 'title' },
-                { id: 'slideDescription', target: 'description' },
-                { id: 'slideExtraText', target: 'extraText' }
+                { id: 'slideDescription', target: 'description' }
             ];
 
             textFields.forEach(field => {
@@ -3561,6 +3622,9 @@
                         // Ensure text_styles is parsed if it comes back as a string
                         if (typeof data.slide.text_styles === 'string') {
                             data.slide.text_styles = JSON.parse(data.slide.text_styles);
+                        }
+                        if (typeof data.slide.extra_texts === 'string') {
+                            data.slide.extra_texts = JSON.parse(data.slide.extra_texts);
                         }
                         this.slides.push(data.slide);
                         this.currentSlide = this.slides.length - 1;
@@ -3690,34 +3754,227 @@
         }
 
         addDragSnapping(node) {
-            node.on('dragend', () => {
-                const x = Math.round(node.x());
-                const y = Math.round(node.y());
+            node.on('dragmove', (e) => {
+                // No boundary checks - allow free movement
+            });
 
-                // Update slide data locally
-                if (this.slides[this.currentSlide]) {
-                    const slide = this.slides[this.currentSlide];
-                    const nodeName = node.name();
+            node.on('dragend', (e) => {
+                const slide = this.slides[this.currentSlide];
 
-                    if (nodeName === 'title') {
-                        slide.title_x = x;
-                        slide.title_y = y;
-                    } else if (nodeName === 'description') {
-                        slide.description_x = x;
-                        slide.description_y = y;
-                    } else if (nodeName === 'extraText') {
-                        slide.extra_text_x = x;
-                        slide.extra_text_y = y;
+                // Update based on node name/id
+                if (node.name() === 'title') {
+                    slide.title_x = Math.round(node.x());
+                    slide.title_y = Math.round(node.y());
+                } else if (node.name() === 'description') {
+                    slide.description_x = Math.round(node.x());
+                    slide.description_y = Math.round(node.y());
+                } else if (node.name().startsWith('extra_text_')) {
+                    // It's one of the array items
+                    const id = node.name().replace('extra_text_', '');
+                    const item = slide.extra_texts.find(t => t.id === id);
+                    if (item) {
+                        item.x = Math.round(node.x());
+                        item.y = Math.round(node.y());
                     }
+                }
 
-                    this.saveState();
-                    this.debouncedSave(); // Save position changes
+                this.debouncedSave();
+                this.saveState();
+            });
+        }
+
+        renderExtraTextItem(item) {
+            const styles = item.styles || {};
+
+            const textNode = new Konva.Text({
+                x: item.x || 50,
+                y: item.y || 50,
+                text: item.text || 'New Text',
+                fontSize: styles.fontSize || 24,
+                fontFamily: styles.fontFamily || 'Inter',
+                fill: styles.fill || '#000000',
+                fontStyle: styles.fontStyle || 'normal',
+                align: styles.align || 'left',
+                width: styles.width || 300,
+                name: `extra_text_${item.id}`, // Unique Name
+                draggable: true // Always draggable
+            });
+
+            this.layer.add(textNode);
+            this.addDragSnapping(textNode);
+
+            // Enable editing
+            textNode.on('dblclick dbltap', () => {
+                this.EditTextNode(textNode, item);
+            });
+
+            // Selection for styling
+            textNode.on('click tap', () => {
+                this.selectTextNode(textNode, item);
+            });
+
+            // Apply other styles
+            if (styles.textTransform) {
+                const originalText = textNode.text();
+                if (styles.textTransform === 'uppercase') textNode.text(originalText.toUpperCase());
+            }
+        }
+
+        selectTextNode(node, itemData) {
+            // Highlight selected node (maybe add a transformer or just border?)
+            // For now, just focus Controls
+            this.currentSelectedTextId = itemData ? itemData.id : null;
+            this.currentSelectedTarget = itemData ? `extra_text_${itemData.id}` : node.name();
+
+            console.log('Selected:', this.currentSelectedTarget);
+
+            // Update Sidebar values to match this node
+            const styles = itemData ? (itemData.styles || {}) : {};
+
+            // Show Selected Text Controls
+            const selectedControls = document.getElementById('selectedTextControls');
+            if (selectedControls) {
+                selectedControls.style.display = 'block';
+
+                // Populate values
+                const colorInput = document.getElementById('selectedColor');
+                if (colorInput) colorInput.value = styles.fill || node.fill() || '#000000';
+
+                const sizeInput = document.getElementById('selectedFontSize');
+                if (sizeInput) sizeInput.value = styles.fontSize || node.fontSize() || 24;
+
+                const familyInput = document.getElementById('selectedFontFamily');
+                if (familyInput) familyInput.value = styles.fontFamily || node.fontFamily() || 'Inter';
+            }
+
+            // We need to tell the editor that subsequent style changes apply to THIS node.
+            this.activeTextTarget = this.currentSelectedTarget;
+
+            // Also update the global/legacy inputs if applicable (so they match if user uses them)
+            // But having two sets of inputs might be confusing.
+            // The "Selected Text" section is the source of truth for the selection.
+
+            /*
+               PROBLEM: The current event listeners for style changes (fontColor, etc.)
+               use `this.slides[this.currentSlide].font_color` etc. and redraw.
+               They don't know about `activeTextTarget`.
+               
+               I need to update `setupEventListeners` to check `activeTextTarget`.
+            */
+        }
+
+        EditTextNode(textNode, itemData) {
+            // Hide text node
+            textNode.hide();
+            this.layer.draw();
+
+            // Create textarea over canvas
+            const textPosition = textNode.absolutePosition();
+            const stageBox = this.stage.container().getBoundingClientRect();
+            const areaPosition = {
+                x: stageBox.left + textPosition.x,
+                y: stageBox.top + textPosition.y
+            };
+
+            const textarea = document.createElement('textarea');
+            document.body.appendChild(textarea);
+
+            textarea.value = itemData ? itemData.text : textNode.text();
+            textarea.style.position = 'absolute';
+            textarea.style.top = areaPosition.y + 'px';
+            textarea.style.left = areaPosition.x + 'px';
+            textarea.style.width = textNode.width() - textNode.padding() * 2 + 'px';
+            textarea.style.height = textNode.height() - textNode.padding() * 2 + 5 + 'px';
+            textarea.style.fontSize = textNode.fontSize() + 'px';
+            textarea.style.border = 'none';
+            textarea.style.padding = '0px';
+            textarea.style.margin = '0px';
+            textarea.style.overflow = 'hidden';
+            textarea.style.background = 'none';
+            textarea.style.outline = 'none';
+            textarea.style.resize = 'none';
+            textarea.style.lineHeight = textNode.lineHeight();
+            textarea.style.fontFamily = textNode.fontFamily();
+            textarea.style.transformOrigin = 'left top';
+            textarea.style.textAlign = textNode.align();
+            textarea.style.color = textNode.fill();
+
+            // Focus and handle blur
+            textarea.focus();
+
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    textarea.blur();
                 }
             });
 
-            node.on('dragmove', () => {
-                // No boundary checks - allow free movement
+            textarea.addEventListener('blur', () => {
+                const newVal = textarea.value;
+                if (itemData) {
+                    itemData.text = newVal;
+                }
+                textNode.text(newVal);
+                textNode.show();
+                this.layer.draw();
+                document.body.removeChild(textarea);
+                this.debouncedSave();
             });
+        }
+
+        // Helper to apply styles
+        applyStyleToActiveTarget(property, value) {
+            if (this.slides[this.currentSlide]) {
+                const slide = this.slides[this.currentSlide];
+                if (!slide.text_styles) slide.text_styles = {};
+
+                if (this.activeTextTarget) {
+                    // Apply to specific selected node
+                    if (this.activeTextTarget.startsWith('extra_text_')) {
+                        const id = this.activeTextTarget.replace('extra_text_', '');
+                        const item = slide.extra_texts.find(t => t.id === id);
+                        if (item) {
+                            if (!item.styles) item.styles = {};
+                            item.styles[property] = value;
+                        }
+                    } else {
+                        // Apply to standard node
+                        if (!slide.text_styles[this.activeTextTarget]) slide.text_styles[this.activeTextTarget] = {};
+                        slide.text_styles[this.activeTextTarget][property] = value;
+                    }
+                } else {
+                    // All standard nodes fallback
+                    ['title', 'description', 'extraText'].forEach(target => {
+                        if (!slide.text_styles[target]) slide.text_styles[target] = {};
+                        slide.text_styles[target][property] = value;
+                    });
+                }
+                this.renderSlide(this.currentSlide);
+                this.debouncedSave(); // Ensure changes are saved
+                // toastr.info(`${property} updated`); // too spammy for slider
+            }
+        }
+
+        async addExtraText() {
+            const slide = this.slides[this.currentSlide];
+            if (!slide.extra_texts) slide.extra_texts = [];
+
+            const newId = Date.now().toString(); // Simple ID
+            const newText = {
+                id: newId,
+                text: 'New Text',
+                x: 100,
+                y: 100,
+                styles: {
+                    fontSize: 24,
+                    fill: '#000000',
+                    fontFamily: 'Inter'
+                }
+            };
+
+            slide.extra_texts.push(newText);
+            this.renderExtraTextItem(newText);
+            this.layer.batchDraw();
+            this.debouncedSave();
         }
 
         getPlatformDimensions(platform, format) {
@@ -3875,6 +4132,7 @@
             }
         }
 
+        // Helper class methods usage
         initButtonGroup(className, target, property, dataAttr) {
             const buttons = document.querySelectorAll(`.${className}`);
             buttons.forEach(button => {
@@ -3882,13 +4140,16 @@
                     // Remove active class from siblings
                     const siblings = button.parentElement.querySelectorAll(`.${className}`);
                     siblings.forEach(sib => sib.classList.remove('active'));
-
-                    // Add active class to clicked button
                     button.classList.add('active');
 
-                    // Update text property
                     const value = button.getAttribute(dataAttr);
-                    this.updateTextProperty(target, property, value);
+                    // Use editor's apply method
+                    if (this.editor.applyStyleToActiveTarget) {
+                        this.editor.applyStyleToActiveTarget(property, value);
+                    } else {
+                        // Fallback implementation if method not ready?
+                        // Should technically be ready.
+                    }
                 });
             });
         }

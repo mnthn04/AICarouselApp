@@ -43,6 +43,10 @@ class Slide(models.Model):
     # Store granular text styles (JSON string)
     text_styles = models.TextField(blank=True, default='{}')
     
+    # Store multiple extra text elements (JSON list)
+    # Format: [{"id": "uuid", "text": "...", "x": 0, "y": 0, "styles": {...}}]
+    extra_texts = models.TextField(blank=True, default='[]')
+    
     generated_image = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)  # Use default instead of auto_now_add
     updated_at = models.DateTimeField(auto_now=True)
