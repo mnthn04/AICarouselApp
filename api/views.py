@@ -78,7 +78,8 @@ def editor(request, project_id=None):
                     'description_x': slide.description_x,
                     'description_y': slide.description_y,
                     'extra_text_x': slide.extra_text_x,
-                    'extra_text_y': slide.extra_text_y
+                    'extra_text_y': slide.extra_text_y,
+                    'user_images': slide.user_images # Pass list of user images
                 }
                 
                 # Add full image URL if exists
@@ -950,6 +951,16 @@ def update_slide(request):
                     slide.extra_texts = json.dumps(eterms)
                 else:
                     slide.extra_texts = eterms
+
+            if 'user_images' in slide_data:
+                # Ensure it's stored as string
+                uimages = slide_data['user_images']
+                if isinstance(uimages, list):
+                    slide.user_images = json.dumps(uimages)
+                else:
+                    slide.user_images = uimages
+
+
 
             slide.save()
             

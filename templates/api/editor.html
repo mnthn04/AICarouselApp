@@ -1679,7 +1679,7 @@
     <div class="editor-sidebar">
         <div class="sidebar-header">
             <h3><i class="fas fa-layer-group"></i> Slides</h3>
-            <button id="addSlide" class="btn btn-secondary">
+            <button id="addSlide" style="margin-right: -33px;" class="btn btn-secondary">
                 <i class="fas fa-plus"></i> Add
             </button>
         </div>
@@ -1745,11 +1745,8 @@
         </div>
 
         <div class="sidebar-actions">
-            <button id="saveDesign" class="btn btn-primary">
-                <i class="fas fa-save"></i> Save Slide
-            </button>
-            <button id="saveAllDesigns" class="btn btn-secondary">
-                <i class="fas fa-save"></i> Save All
+            <button id="exportSlideBtn" class="btn btn-primary">
+                <i class="fas fa-download"></i> Export Current Slide
             </button>
             <button id="exportBtn" class="btn btn-success">
                 <i class="fas fa-download"></i> Export All
@@ -1773,9 +1770,6 @@
             <div class="editor-tools">
                 <button id="undo" class="btn btn-sm" title="Undo">
                     <i class="fas fa-undo"></i>
-                </button>
-                <button id="redo" class="btn btn-sm" title="Redo">
-                    <i class="fas fa-redo"></i>
                 </button>
 
                 <button id="fullscreen" class="btn btn-sm" title="Fullscreen">
@@ -2030,88 +2024,100 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Image Prompt</label>
-                <textarea id="slideImagePrompt" placeholder="Describe the background image" rows="2"
-                    class="form-control"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Generated Image URL</label>
-                <input type="text" id="generatedImageUrl" placeholder="No image generated yet" class="form-control"
-                    readonly>
-                <div class="form-hint">This will be updated when you generate an image</div>
-            </div>
-            <!-- Update Slide button removed in favor of dynamic auto-save -->
-            <button id="regenerateSlide" class="btn btn-warning">
-                <i class="fas fa-robot"></i> Regenerate with AI
-            </button>
-        </div>
 
-        <div class="properties-section">
-            <h5>Canvas Settings</h5>
-            <div class="form-group">
-                <label>Width (px)</label>
-                <input type="number" id="canvasWidth" placeholder="1080" class="form-control" min="100" max="4000">
-            </div>
-            <div class="form-group">
-                <label>Height (px)</label>
-                <input type="number" id="canvasHeight" placeholder="1080" class="form-control" min="100" max="4000">
-            </div>
-            <button id="updateCanvasSize" class="btn btn-secondary">
-                <i class="fas fa-expand"></i> Update Canvas
-            </button>
-        </div>
-
-        <!-- General Text Controls (Global) -->
-        <div class="control-group">
-            <h5><i class="fas fa-sliders-h"></i> General Text Settings</h5>
-            <div class="control-row">
-                <div class="control-item">
-                    <label>Line Height</label>
-                    <input type="range" id="lineHeight" min="0.8" max="2.0" value="1.2" step="0.1">
-                </div>
-                <div class="control-item">
-                    <label>Letter Spacing</label>
-                    <input type="range" id="letterSpacing" min="-2" max="10" value="0" step="0.5">
+                <!-- General Text Settings (Merged) -->
+                <div class="form-group border-top pt-3 mt-3">
+                    <label class="form-label fw-bold mb-3"><i class="fas fa-sliders-h"></i> General Text
+                        Settings</label>
+                    <div class="d-flex gap-2 mb-3">
+                        <div class="flex-grow-1">
+                            <label class="small text-muted mb-1">Line Height</label>
+                            <input type="range" id="lineHeight" min="0.8" max="2.0" value="1.2" step="0.1"
+                                class="form-range">
+                        </div>
+                        <div class="flex-grow-1">
+                            <label class="small text-muted mb-1">Letter Spacing</label>
+                            <input type="range" id="letterSpacing" min="-2" max="10" value="0" step="0.5"
+                                class="form-range">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="small text-muted mb-1 d-block">Text Transform</label>
+                        <div class="transform-buttons btn-group w-100 shadow-sm">
+                            <button type="button" class="btn btn-outline-secondary btn-sm transform-btn active"
+                                data-transform="none">None</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm transform-btn"
+                                data-transform="uppercase">AA</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm transform-btn"
+                                data-transform="lowercase">aa</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm transform-btn"
+                                data-transform="capitalize">Aa</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="control-item">
-                <label>Text Transform</label>
-                <div class="transform-buttons">
-                    <button type="button" class="transform-btn active" data-transform="none">None</button>
-                    <button type="button" class="transform-btn" data-transform="uppercase">Uppercase</button>
-                    <button type="button" class="transform-btn" data-transform="lowercase">Lowercase</button>
-                    <button type="button" class="transform-btn" data-transform="capitalize">Capitalize</button>
+            <!-- Upload Image Section (Replaces AI Generation) -->
+            <!-- Upload Image Section -->
+            <div class="properties-section">
+                <h5>Upload Image</h5>
+                <div class="form-group">
+                    <label class="form-label mb-2">Add Image to Slide</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="file" id="imageUploadInput" accept="image/*" class="form-control form-control-sm"
+                            style="display: none;">
+                        <button id="uploadImageBtn" class="btn btn-light btn-sm w-100 border">
+                            <i class="fas fa-plus"></i> Add Image
+                        </button>
+                    </div>
+                    <div class="form-hint mt-1">Supported formats: PNG, JPG</div>
                 </div>
             </div>
-        </div>
 
-        <div class="properties-section">
-            <h5>Platform Templates</h5>
-            <div class="form-group">
-                <label>Platform</label>
-                <select id="platformSelect" class="form-control">
-                    <option value="instagram">Instagram</option>
-                    <option value="linkedin">LinkedIn</option>
-                </select>
+
+            <div class="properties-section">
+                <h5>Canvas Settings</h5>
+                <div class="form-group">
+                    <label>Width (px)</label>
+                    <input type="number" id="canvasWidth" placeholder="1080" class="form-control" min="100" max="4000">
+                </div>
+                <div class="form-group">
+                    <label>Height (px)</label>
+                    <input type="number" id="canvasHeight" placeholder="1080" class="form-control" min="100" max="4000">
+                </div>
+                <button id="updateCanvasSize" class="btn btn-secondary">
+                    <i class="fas fa-expand"></i> Update Canvas
+                </button>
             </div>
-            <div class="form-group">
-                <label>Format</label>
-                <select id="formatSelect" class="form-control">
-                    <option value="square">Square (1:1)</option>
-                    <option value="portrait">Portrait (4:5)</option>
-                    <option value="story">Story (9:16)</option>
-                    <option value="landscape">Landscape (1.91:1)</option>
-                </select>
+
+
+
+            <div class="properties-section">
+                <h5>Platform Templates</h5>
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="platformSelect" class="form-control">
+                        <option value="instagram">Instagram</option>
+                        <option value="linkedin">LinkedIn</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Format</label>
+                    <select id="formatSelect" class="form-control">
+                        <option value="square">Square (1:1)</option>
+                        <option value="portrait">Portrait (4:5)</option>
+                        <option value="story">Story (9:16)</option>
+                        <option value="landscape">Landscape (1.91:1)</option>
+                    </select>
+                </div>
+                <button id="applyTemplate" class="btn btn-secondary">
+                    <i class="fas fa-magic"></i> Apply Template
+                </button>
             </div>
-            <button id="applyTemplate" class="btn btn-secondary">
-                <i class="fas fa-magic"></i> Apply Template
-            </button>
         </div>
     </div>
-</div>
-{% endif %}
+
+
+    {% endif %}
 </div>
 
 <!-- Loading overlay -->
@@ -2132,6 +2138,7 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/konva@8/konva.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
     // CSRF Token helper
     function getCSRFToken() {
@@ -2267,6 +2274,17 @@
                             }
                         } else if (!slide.extra_texts) {
                             slide.extra_texts = [];
+                        }
+
+                        // Parse user_images if string
+                        if (slide.user_images && typeof slide.user_images === 'string') {
+                            try {
+                                slide.user_images = JSON.parse(slide.user_images);
+                            } catch (e) {
+                                slide.user_images = [];
+                            }
+                        } else if (!slide.user_images) {
+                            slide.user_images = [];
                         }
 
                         return slide;
@@ -2505,6 +2523,7 @@
                 font_color: slide.font_color,
                 text_styles: slide.text_styles, // Send granular styles
                 extra_texts: slide.extra_texts, // Send list
+                user_images: slide.user_images, // Send user images
 
                 // Canvas
                 canvas_width: slide.canvas_width,
@@ -2802,6 +2821,13 @@
             if (slide.extra_texts && Array.isArray(slide.extra_texts)) {
                 slide.extra_texts.forEach((textItem) => {
                     this.renderExtraTextItem(textItem);
+                });
+            }
+
+            // Render User Images
+            if (slide.user_images && Array.isArray(slide.user_images)) {
+                slide.user_images.forEach((imgData) => {
+                    this.renderUserImage(imgData);
                 });
             }
 
@@ -3371,121 +3397,21 @@
             // Content update listener removed - now handled dynamically
 
             // Regenerate slide with AI
-            document.getElementById('regenerateSlide').addEventListener('click', async () => {
-                if (!this.slides[this.currentSlide]) {
-                    toastr.error('No slide selected');
-                    return;
-                }
-
-                const slide = this.slides[this.currentSlide];
-                const topic = slide.title || 'Slide content';
-
-                toastr.info('Regenerating slide content with AI...');
-
-                try {
-                    const response = await fetch('/api/regenerate-slide/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCSRFToken()
-                        },
-                        body: JSON.stringify({
-                            slide_id: slide.id,
-                            topic: topic
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // Update slide with new content
-                        Object.assign(slide, data.slide);
-                        // Ensure text_styles is parsed if it comes back as a string
-                        if (typeof slide.text_styles === 'string') {
-                            slide.text_styles = JSON.parse(slide.text_styles);
-                        }
-                        if (typeof slide.extra_texts === 'string') {
-                            slide.extra_texts = JSON.parse(slide.extra_texts);
-                        }
-                        this.renderSlide(this.currentSlide);
-                        this.renderSlidesList();
-                        toastr.success('Slide regenerated with AI!');
-                    } else {
-                        toastr.error(data.error || 'Failed to regenerate slide');
+            const regenerateBtn = document.getElementById('regenerateSlide');
+            if (regenerateBtn) {
+                regenerateBtn.addEventListener('click', async () => {
+                    if (!this.slides[this.currentSlide]) {
+                        toastr.error('No slide selected');
+                        return;
                     }
-                } catch (error) {
-                    console.error('Error regenerating slide:', error);
-                    toastr.error('Failed to regenerate slide');
-                }
-            });
 
-            // Generate image
-            document.getElementById('generateImageBtn').addEventListener('click', async () => {
-                const prompt = document.getElementById('imagePrompt').value;
-                if (!prompt.trim()) {
-                    toastr.error('Please enter an image description');
-                    return;
-                }
-
-                if (!this.slides[this.currentSlide]) {
-                    toastr.error('No slide selected');
-                    return;
-                }
-
-                const slide = this.slides[this.currentSlide];
-
-                toastr.info('Generating Canva-style image...');
-
-                try {
-                    const response = await fetch('/api/generate-and-apply/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCSRFToken()
-                        },
-                        body: JSON.stringify({
-                            description: prompt,
-                            slide_id: slide.id,
-                            platform: 'instagram'
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // Update slide with generated image
-                        slide.generated_image = data.filename;
-                        slide.image_prompt = prompt;
-
-                        // Update UI
-                        document.getElementById('slideImagePrompt').value = prompt;
-                        document.getElementById('generatedImageUrl').value = data.image_url;
-
-                        // Update image preview
-                        const imagePreview = document.getElementById('imagePreview');
-                        imagePreview.innerHTML = `<img src="${data.image_url}" alt="Generated" style="width:100%;height:100%;object-fit:cover">`;
-
-                        // Re-render slide with new image
-                        await this.renderSlide(this.currentSlide);
-                        this.renderSlidesList();
-
-                        toastr.success('Canva image generated and applied to slide!');
-                    } else {
-                        toastr.error(data.error || 'Failed to generate image');
-                    }
-                } catch (error) {
-                    console.error('Error generating image:', error);
-                    toastr.error('Failed to generate image');
-                }
-            });
-
-            // Save design
-            document.getElementById('saveDesign').addEventListener('click', async () => {
-                if (this.slides[this.currentSlide]) {
                     const slide = this.slides[this.currentSlide];
+                    const topic = slide.title || 'Slide content';
+
+                    toastr.info('Regenerating slide content with AI...');
 
                     try {
-                        const response = await fetch('/api/update-slide/', {
+                        const response = await fetch('/api/regenerate-slide/', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -3493,98 +3419,137 @@
                             },
                             body: JSON.stringify({
                                 slide_id: slide.id,
-                                slide_data: {
-                                    title: slide.title,
-                                    description: slide.description,
-                                    image_prompt: slide.image_prompt,
-                                    background_color: slide.background_color,
-                                    font_color: slide.font_color,
-                                    text_styles: slide.text_styles, // Include text_styles
-                                    extra_texts: slide.extra_texts, // Include extra_texts
-
-                                    // Add coordinates
-                                    title_x: slide.title_x,
-                                    title_y: slide.title_y,
-                                    description_x: slide.description_x,
-                                    description_y: slide.description_y,
-                                    extra_text: slide.extra_text,
-                                    extra_text_x: slide.extra_text_x,
-                                    extra_text_y: slide.extra_text_y
-                                }
+                                topic: topic
                             })
                         });
 
                         const data = await response.json();
+
                         if (data.success) {
-                            toastr.success('Slide design saved successfully');
+                            // Update slide with new content
+                            Object.assign(slide, data.slide);
+                            // Ensure text_styles is parsed if it comes back as a string
+                            if (typeof slide.text_styles === 'string') {
+                                slide.text_styles = JSON.parse(slide.text_styles);
+                            }
+                            if (typeof slide.extra_texts === 'string') {
+                                slide.extra_texts = JSON.parse(slide.extra_texts);
+                            }
+                            this.renderSlide(this.currentSlide);
+                            this.renderSlidesList();
+                            toastr.success('Slide regenerated with AI!');
                         } else {
-                            toastr.error(data.error || 'Failed to save design');
+                            toastr.error(data.error || 'Failed to regenerate slide');
                         }
                     } catch (error) {
-                        console.error('Error saving design:', error);
-                        toastr.error('Failed to save design');
+                        console.error('Error regenerating slide:', error);
+                        toastr.error('Failed to regenerate slide');
                     }
-                }
-            });
+                });
+            }
 
-            // Save all designs
-            document.getElementById('saveAllDesigns').addEventListener('click', async () => {
-                if (this.slides.length === 0) {
-                    toastr.error('No slides to save');
+            // Generate image
+            const genImgBtn = document.getElementById('generateImageBtn');
+            if (genImgBtn) {
+                genImgBtn.addEventListener('click', async () => {
+                    const prompt = document.getElementById('imagePrompt').value;
+                    if (!prompt.trim()) {
+                        toastr.error('Please enter an image description');
+                        return;
+                    }
+
+                    if (!this.slides[this.currentSlide]) {
+                        toastr.error('No slide selected');
+                        return;
+                    }
+
+                    const slide = this.slides[this.currentSlide];
+
+                    toastr.info('Generating Canva-style image...');
+
+                    try {
+                        const response = await fetch('/api/generate-and-apply/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCSRFToken()
+                            },
+                            body: JSON.stringify({
+                                description: prompt,
+                                slide_id: slide.id,
+                                platform: 'instagram'
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // Update slide with generated image
+                            slide.generated_image = data.filename;
+                            slide.image_prompt = prompt;
+
+                            // Update UI
+                            document.getElementById('slideImagePrompt').value = prompt;
+                            document.getElementById('generatedImageUrl').value = data.image_url;
+
+                            // Update image preview
+                            const imagePreview = document.getElementById('imagePreview');
+                            imagePreview.innerHTML = `<img src="${data.image_url}" alt="Generated" style="width:100%;height:100%;object-fit:cover">`;
+
+                            // Re-render slide with new image
+                            await this.renderSlide(this.currentSlide);
+                            this.renderSlidesList();
+
+                            toastr.success('Canva image generated and applied to slide!');
+                        } else {
+                            toastr.error(data.error || 'Failed to generate image');
+                        }
+                    } catch (error) {
+                        console.error('Error generating image:', error);
+                        toastr.error('Failed to generate image');
+                    }
+                });
+            }
+
+            // Export single slide as PNG
+            document.getElementById('exportSlideBtn').addEventListener('click', async () => {
+                if (!this.slides[this.currentSlide]) {
+                    toastr.error('No slide to export');
                     return;
                 }
 
-                toastr.info('Saving all slides...');
+                const slide = this.slides[this.currentSlide];
+                const slideNum = this.currentSlide + 1;
+
+                toastr.info(`Exporting slide ${slideNum}...`);
 
                 try {
-                    let savedCount = 0;
-                    let errorCount = 0;
+                    // Wait for any pending renders
+                    await new Promise(resolve => setTimeout(resolve, 300));
 
-                    for (const slide of this.slides) {
-                        try {
-                            const response = await fetch('/api/update-slide/', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRFToken': getCSRFToken()
-                                },
-                                body: JSON.stringify({
-                                    slide_id: slide.id,
-                                    slide_data: {
-                                        title: slide.title,
-                                        description: slide.description,
-                                        image_prompt: slide.image_prompt,
-                                        background_color: slide.background_color,
-                                        font_color: slide.font_color,
-                                        text_styles: slide.text_styles, // Include text_styles
-                                        extra_texts: slide.extra_texts // Include extra_texts
-                                    }
-                                })
-                            });
+                    // Export as image data URL
+                    const dataURL = this.stage.toDataURL({
+                        mimeType: 'image/png',
+                        quality: 1.0,
+                        pixelRatio: 3
+                    });
 
-                            const data = await response.json();
-                            if (data.success) {
-                                savedCount++;
-                            } else {
-                                errorCount++;
-                            }
-                        } catch (error) {
-                            errorCount++;
-                        }
-                    }
+                    // Create download link with naming format: carousel_slides_{projectId}_slide_{slideNum}.png
+                    const link = document.createElement('a');
+                    link.download = `carousel_slides_${this.projectId}_slide_${slideNum}.png`;
+                    link.href = dataURL;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
 
-                    if (errorCount === 0) {
-                        toastr.success(`All ${savedCount} slides saved successfully`);
-                    } else {
-                        toastr.warning(`${savedCount} slides saved, ${errorCount} failed`);
-                    }
+                    toastr.success(`Slide ${slideNum} exported successfully!`);
                 } catch (error) {
-                    console.error('Error saving all designs:', error);
-                    toastr.error('Failed to save all designs');
+                    console.error('Error exporting slide:', error);
+                    toastr.error('Failed to export slide');
                 }
             });
 
-            // Export
+            // Export all as ZIP
             document.getElementById('exportBtn').addEventListener('click', () => {
                 this.exportSlides();
             });
@@ -3618,24 +3583,6 @@
                     this.renderSlide(this.currentSlide);
                     this.renderSlidesList();
                     toastr.info('Undo applied');
-                }
-            });
-
-            document.getElementById('redo').addEventListener('click', () => {
-                if (this.redoStack.length > 0) {
-                    const nextState = this.redoStack.pop();
-                    this.undoStack.push(JSON.stringify(this.slides[this.currentSlide]));
-                    this.slides[this.currentSlide] = JSON.parse(nextState);
-                    // Ensure text_styles is parsed after redo
-                    if (typeof this.slides[this.currentSlide].text_styles === 'string') {
-                        this.slides[this.currentSlide].text_styles = JSON.parse(this.slides[this.currentSlide].text_styles);
-                    }
-                    if (typeof this.slides[this.currentSlide].extra_texts === 'string') {
-                        this.slides[this.currentSlide].extra_texts = JSON.parse(this.slides[this.currentSlide].extra_texts);
-                    }
-                    this.renderSlide(this.currentSlide);
-                    this.renderSlidesList();
-                    toastr.info('Redo applied');
                 }
             });
 
@@ -3892,6 +3839,9 @@
 
                 toastr.info(`Applied ${platform} ${format} template (${dimensions.width}×${dimensions.height})`);
             });
+
+            // Image Upload Listeners
+            this.setupImageListeners();
 
             // --- Event Listeners for Style Buttons (Bold, Italic, Underline) ---
             const handleStyleClick = (targetName, property, value, btn) => {
@@ -4413,14 +4363,60 @@
                 return;
             }
 
-            toastr.info('Exporting slides as images...');
+            toastr.info('Preparing ZIP file with all slides...');
 
-            // Export each slide
-            for (let i = 0; i < this.slides.length; i++) {
-                await this.exportSlide(i);
+            try {
+                const zip = new JSZip();
+                const originalSlide = this.currentSlide;
+
+                // Capture each slide as image and add to ZIP
+                for (let i = 0; i < this.slides.length; i++) {
+                    // Switch to the slide
+                    this.currentSlide = i;
+                    await this.renderSlide(i);
+
+                    // Wait for render to complete
+                    await new Promise(resolve => setTimeout(resolve, 400));
+
+                    // Export as image data URL
+                    const dataURL = this.stage.toDataURL({
+                        mimeType: 'image/png',
+                        quality: 1.0,
+                        pixelRatio: 3
+                    });
+
+                    // Convert data URL to blob data
+                    const base64Data = dataURL.split(',')[1];
+
+                    // Add to ZIP with slide number as filename
+                    zip.file(`slide_${i + 1}.png`, base64Data, { base64: true });
+
+                    toastr.info(`Processed slide ${i + 1} of ${this.slides.length}`);
+                }
+
+                // Restore original slide view
+                this.currentSlide = originalSlide;
+                await this.renderSlide(originalSlide);
+
+                // Generate ZIP and download
+                toastr.info('Generating ZIP file...');
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+                // Create download link
+                const downloadUrl = URL.createObjectURL(zipBlob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = `carousel_slides_${this.projectId}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(downloadUrl);
+
+                toastr.success(`All ${this.slides.length} slides exported as ZIP!`);
+            } catch (error) {
+                console.error('Error exporting slides:', error);
+                toastr.error('Failed to export slides: ' + error.message);
             }
-
-            toastr.success('All slides exported successfully!');
         }
 
         async exportSlide(slideIndex) {
@@ -4440,7 +4436,7 @@
 
             // Download
             const link = document.createElement('a');
-            link.download = `carousel-slide-${slideIndex + 1}-${this.slides[slideIndex].title?.substring(0, 20) || 'slide'}.png`;
+            link.download = `slide_${slideIndex + 1}.png`;
             link.href = dataURL;
             document.body.appendChild(link);
             link.click();
@@ -4448,6 +4444,149 @@
 
             // Small delay between exports
             await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        setupImageListeners() {
+            const uploadBtn = document.getElementById('uploadImageBtn');
+            const fileInput = document.getElementById('imageUploadInput');
+
+            if (uploadBtn && fileInput) {
+                uploadBtn.addEventListener('click', () => {
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    this.handleImageUpload(e);
+                });
+            }
+        }
+
+        async handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.match('image.*')) {
+                toastr.error('Please upload an image file (PNG, JPG)');
+                return;
+            }
+
+            if (!this.slides[this.currentSlide]) {
+                toastr.error('No slide selected');
+                return;
+            }
+
+            // check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toastr.error('Image size must be less than 5MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const base64Data = event.target.result;
+
+                // Create image object
+                const slide = this.slides[this.currentSlide];
+                if (!slide.user_images) slide.user_images = [];
+
+                const newImage = {
+                    id: Date.now().toString(),
+                    src: base64Data,
+                    x: 100,
+                    y: 100,
+                    width: 300,
+                    height: 300,
+                    rotation: 0
+                };
+
+                // Add to slide data
+                slide.user_images.push(newImage);
+
+                // Render immediately (append to layer)
+                this.renderUserImage(newImage);
+                this.layer.batchDraw();
+
+                // Save
+                this.debouncedSave();
+                toastr.success('Image added to slide');
+
+                // Reset input
+                e.target.value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        renderUserImage(imgData) {
+            const imageObj = new Image();
+            imageObj.src = imgData.src;
+
+            imageObj.onload = () => {
+                const konvaImage = new Konva.Image({
+                    x: imgData.x,
+                    y: imgData.y,
+                    image: imageObj,
+                    width: imgData.width,
+                    height: imgData.height,
+                    rotation: imgData.rotation || 0,
+                    name: `user_image_${imgData.id}`,
+                    draggable: true,
+                    id: imgData.id
+                });
+
+                this.layer.add(konvaImage);
+                this.makeImageEditable(konvaImage, imgData);
+                this.layer.batchDraw();
+            };
+        }
+
+        makeImageEditable(imageNode, imgData) {
+            // Selection logic
+            imageNode.on('click tap', (e) => {
+                // Detach existing transformer
+                this.transformer.nodes([]);
+
+                // Attach transformer to this node
+                this.transformer.nodes([imageNode]);
+                this.layer.batchDraw();
+
+                // Set current selection
+                this.currentSelectedImageId = imgData.id;
+                this.currentSelectedTarget = `user_image_${imgData.id}`;
+
+                // Stop propagation so stage click doesn't deselect immediately if implemented
+                e.cancelBubble = true;
+            });
+
+            // Transform end
+            imageNode.on('transformend', () => {
+                // Update data
+                imgData.x = Math.round(imageNode.x());
+                imgData.y = Math.round(imageNode.y());
+                imgData.rotation = Math.round(imageNode.rotation());
+
+                // Bake scale into width/height
+                const scaleX = imageNode.scaleX();
+                const scaleY = imageNode.scaleY();
+
+                imageNode.scaleX(1);
+                imageNode.scaleY(1);
+
+                imgData.width = Math.round(imageNode.width() * scaleX);
+                imgData.height = Math.round(imageNode.height() * scaleY);
+
+                imageNode.width(imgData.width);
+                imageNode.height(imgData.height);
+
+                this.layer.batchDraw();
+                this.debouncedSave();
+            });
+
+            // Drag end
+            imageNode.on('dragend', () => {
+                imgData.x = Math.round(imageNode.x());
+                imgData.y = Math.round(imageNode.y());
+                this.debouncedSave();
+            });
         }
     }
 
