@@ -519,57 +519,88 @@ def generate_enhanced_image_prompt(
     visual_index = (slide_number - 1) % len(visual_elements)
     selected_visual = visual_elements[visual_index]
     
-    # Build the enhanced prompt - BALANCED visual approach
-    prompt = f"""⚠️⚠️⚠️ CRITICAL RULE - READ THIS FIRST ⚠️⚠️⚠️
-DO NOT PUT ANY TEXT, WORDS, LETTERS, OR NUMBERS IN THIS IMAGE!
-This is a BACKGROUND TEMPLATE. The user will add their own text later.
-- NO titles, headings, labels, or captions
-- NO "tip #1", "mistake #2", etc.
-- The CENTER area must be kept CLEAR for text overlay
-- Only exception: text that is PART OF AN OBJECT (like app icons on a phone screen)
+    # Determine if topic is detailed enough for dynamic object extraction
+    # If topic is short (< 30 chars), use predefined objects as fallback
+    topic_is_detailed = len(topic) >= 30
+    
+    if topic_is_detailed:
+        # For detailed topics, let AI derive objects from the topic itself
+        objects_instruction = f"""
+🎯 DYNAMIC OBJECTS - EXTRACT FROM TOPIC:
+Analyze the topic "{topic}" and CREATE illustrations of objects that DIRECTLY relate to it:
+- If about PIZZA → draw pizza slices, toppings (pepperoni, olives, cheese), pizza box, oven
+- If about BURGER → draw burgers, buns, patties, lettuce, fries, ketchup bottle
+- If about TRAVEL → draw suitcases, planes, landmarks, passports, maps
+- If about FITNESS → draw dumbbells, yoga mat, running shoes, water bottle
+- If about COFFEE → draw coffee cups, beans, steam, latte art, coffee maker
 
-CREATE: A BEAUTIFUL, VISUALLY RICH {topic_category.upper()}-themed carousel slide BACKGROUND.
+IMPORTANT: Create objects that are SPECIFIC to "{topic}" - NOT generic laptops/phones!
+Think: What objects would you SEE if you searched for "{topic}" on Pinterest?"""
+    else:
+        # For short/generic topics, use category-based fallback
+        objects_instruction = f"""
+🎯 TOPIC-RELATED OBJECTS:
+Create illustrated objects related to {topic_category} theme:
+- Suggested: {selected_objects_str}
+- Creative accent: {selected_creative}
+- Make them relevant to "{topic}" """
+    
+    # Build the enhanced prompt - DYNAMIC TOPIC-BASED ILLUSTRATION approach
+    prompt = f"""⚠️ NO TEXT IN IMAGE. Keep 50-55% CENTER AREA completely CLEAR for text overlay.
 
-TOPIC CONTEXT: {topic}
-PLATFORM: {platform.upper()} carousel slide (Slide {slide_number} of {total_slides})
-DESIGN STYLE: "{template['name']}" - {template['description']}
+CREATE: A STUNNING, DESIGNER-QUALITY carousel slide with TOPIC-SPECIFIC illustrations.
+
+═══════════════════════════════════════════════════════════════
+📌 USER'S TOPIC: "{topic}"
+🎯 SLIDE {slide_number} OF {total_slides}
+═══════════════════════════════════════════════════════════════
 
 {flow_desc}
 
-COLOR SCHEME:
-- Primary background: Soft gradient from {bg_color} to {bg_alt}
-- Accent color: {accent_color}
-- Use flowing gradients and soft color transitions
-- Add depth with subtle shadows and highlights
+{objects_instruction}
 
-🎨 VISUAL ELEMENTS TO INCLUDE:
-- Primary objects: {selected_objects_str}
-- Creative accent: {selected_creative}
-- Add soft flowing gradient waves or curves in background
-- Include subtle decorative elements: soft bokeh circles, gentle geometric shapes
-- Use depth layers: foreground objects, mid-ground accents, background gradients
+🎨 AESTHETIC DESIGN:
+- Soft, premium gradient background from {bg_color} to {bg_alt}
+- Position ALL illustrated objects at CORNERS and EDGES ONLY
+- Modern, trendy Instagram aesthetic
+- Objects should be DIRECTLY RELATED to the topic content!
 
-LAYOUT COMPOSITION:
-- Objects arranged beautifully at edges AND partially extending into the composition
-- 35-40% clear space in CENTER for text (not more!)
-- Rich visual interest around the edges and corners
-- Premium flat-lay or lifestyle photography aesthetic
-- Make it feel EXPENSIVE and professionally designed
+🖼️ COMPOSITION - CRITICAL:
+┌─────────────────────────────────────────┐
+│ [Topic object]       [Related item]     │
+│                                         │
+│         50-55% CLEAR CENTER             │
+│         (for user's text)               │
+│                                         │
+│ [Decorative]         [Topic object]     │
+└─────────────────────────────────────────┘
 
-VISUAL RICHNESS:
+- Place 2-3 TOPIC-SPECIFIC illustrated objects in CORNERS
+- Add small decorative elements along EDGES
+- CENTER 50-55% must be COMPLETELY EMPTY for text
+
+🔗 CONNECTING FLOW:
+- Subtle curved ribbon or wave in {accent_color} along edges
+- Creates visual continuity across carousel slides
+
+✨ STYLE DETAILS:
 - {selected_visual}
-- {template['accent_style']}
-- Soft gradient overlays and color washes
-- Subtle shine, sparkle accents (✦), or light flares
-- Gentle shadows for depth and dimension
-- Flowing curved design elements connecting the composition
+- Beautiful {accent_color} accent colors
+- Soft sparkles (✦), gradient orbs near edges
+- Elegant shadows and depth effects
 
-STYLE REQUIREMENTS:
-- Instagram influencer premium aesthetic
-- Visually STUNNING - should make people stop scrolling
-- NOT empty or sparse - visually engaging and dynamic
-- Professional, polished, high-end feel
-- This is a BACKGROUND TEMPLATE - center area for text, but rest should be visually rich!"""
+🎭 PREMIUM QUALITY:
+- Instagram influencer / Canva Pro aesthetic
+- Looks EXPENSIVE and professionally designed
+- User needs NO design skills - ready to post!
+
+⚠️ AVOID:
+- Generic objects unrelated to the topic
+- Objects placed in the center
+- Crowded compositions
+- Flat, boring backgrounds
+
+Create a design that perfectly represents "{topic}" with topic-specific illustrations!"""
     
     return prompt
 
