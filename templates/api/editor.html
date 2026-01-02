@@ -2095,7 +2095,7 @@
                         max="4000">
                 </div>
                 <button id="updatesaystorysSize" class="btn btn-secondary">
-                    <i class="fas fa-expand"></i> Update saystorys
+                    <i class="fas fa-expand"></i> update Canvas
                 </button>
             </div>
 
@@ -3653,7 +3653,7 @@
                             if (field.target === 'extraText') this.slides[this.currentSlide].extra_text = newVal;
                         }
 
-                        // 2. Update saystorys immediately
+                        // 2. update Canvas immediately
                         if (this.layer) {
                             const node = this.layer.findOne(`.${field.target}`);
                             // Also try name selector if class selector fails (Konva names are not classes)
@@ -3871,7 +3871,7 @@
                 }
             });
 
-            // Update saystorys size
+            // update Canvas size
             document.getElementById('updatesaystorysSize').addEventListener('click', async () => {
                 const width = parseInt(document.getElementById('saystorysWidth').value);
                 const height = parseInt(document.getElementById('saystorysHeight').value);
@@ -3909,11 +3909,11 @@
                             await this.renderSlide(this.currentSlide);
                             toastr.success('saystorys size updated');
                         } else {
-                            toastr.error(data.error || 'Failed to update saystorys size');
+                            toastr.error(data.error || 'Failed to update Canvas size');
                         }
                     } catch (error) {
                         console.error('Error updating saystorys size:', error);
-                        toastr.error('Failed to update saystorys size');
+                        toastr.error('Failed to update Canvas size');
                     }
                 }
             });
@@ -4015,7 +4015,7 @@
                 // Update Button State
                 btn.classList.toggle('active');
 
-                // Update saystorys Node
+                // update Canvas Node
                 const node = this.layer.findOne('.' + target) || this.layer.findOne(`[name="${target}"]`);
                 if (node) {
                     node.setAttr(property, newValue);

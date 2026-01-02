@@ -21,6 +21,13 @@ from .utils import (
     check_openai_connection, get_color_palette, create_slide_image_url,
     generate_saystory_background_svg, get_platform_dimensions
 )
+from .prompt_generator import (
+    generate_enhanced_image_prompt,
+    generate_slide_content_prompt,
+    get_topic_color_palette,
+    get_topic_category,
+    generate_pastel_variant
+)
 
 # Initialize OpenAI client
 client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
@@ -346,8 +353,12 @@ def generate_saystory_carousel(request):
             if not topic:
                 return JsonResponse({'error': 'Topic is required'}, status=400)
             
+            # Detect topic category for debugging
+            detected_category = get_topic_category(topic)
+            
             print(f"\n🎨 GENERATING saystory CAROUSEL")
             print(f"📌 Topic: {topic}")
+            print(f"🏷️ Detected Category: {detected_category}")
             print(f"📱 Platform: {platform}")
             print(f"✨ Style: {style}")
             print(f"📊 Slides: {slide_count}")
@@ -452,36 +463,29 @@ def generate_saystory_carousel(request):
 def generate_saystory_slides_content(topic, slide_count, platform, style):
     """
     Generate saystory-style slide content using OpenAI API
+    Now with enhanced prompts for connected, premium carousel designs.
     """
-    print(f"📝 Generating {slide_count} saystory slides...")
+    print(f"📝 Generating {slide_count} ENHANCED saystory slides...")
     
     try:
-        # Use gpt-4.0-mini for reliability
-        prompt = f"""Create {slide_count} slides for a carousel about "{topic}".
-
-Platform: {platform}
-Style: {style}
-
-Return ONLY a JSON array with exactly {slide_count} objects. Each object must have:
-- title: Engaging title (5-8 words)
-- description: Informative description (1-2 sentences)
-- image_prompt: Description for saystory background image
-- background_color: Hex color code (e.g., "#405DE6")
-- font_color: Hex color code (e.g., "#FFFFFF")
-
-Make it professional and suitable for {platform} with {style} design."""
+        # Use the enhanced content prompt from prompt_generator
+        prompt = generate_slide_content_prompt(topic, slide_count, platform, style)
         
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
                 {
                     "role": "system", 
-                    "content": f"You are a professional saystory designer. Return ONLY a valid JSON array. No explanations."
+                    "content": """You are an EXPERT social media content strategist and designer.
+You create carousel content that goes VIRAL on Instagram and LinkedIn.
+Your designs are cohesive - all slides feel like part of one beautiful, flowing design.
+Use bright, attractive pastel colors that make people stop scrolling.
+Return ONLY a valid JSON array. No explanations."""
                 },
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7,
-            max_tokens=2000
+            temperature=0.8,
+            max_tokens=2500
         )
         
         content = response.choices[0].message.content.strip()
@@ -552,30 +556,58 @@ Make it professional and suitable for {platform} with {style} design."""
         return create_default_slides(topic, slide_count, platform, style)
 
 
-def generate_saystory_image(prompt, platform, style, slide_id, bg_color=None, profile_image_path=None, brand_logo_path=None):
+def generate_saystory_image(prompt, platform, style, slide_id, bg_color=None, profile_image_path=None, brand_logo_path=None, slide_number=1, total_slides=1, project_id=None, topic=None, brand_colors=None):
     """
-    Generate saystory-style background image using GPT 3
+    Generate saystory-style background image using GPT Image API
+    Now with enhanced prompts for connected, premium carousel designs.
     """
-    print(f"🎨 Generating saystory image: {prompt[:50]}...")
+    print(f"🎨 Generating ENHANCED saystory image: {prompt[:50]}...")
     
-    # Create enhanced prompt for GPT
-    saystory_prompt = f"""Create a MINIMAL, CLEAN saystory template background for a {platform} carousel slide.
+    # Use the enhanced prompt generator for premium, connected designs
+    if topic:
+        saystory_prompt = generate_enhanced_image_prompt(
+            topic=topic,
+            slide_number=slide_number,
+            total_slides=total_slides,
+            platform=platform,
+            style=style,
+            brand_colors=brand_colors,
+            project_id=project_id
+        )
+        # Append the original theme/prompt for additional context
+        saystory_prompt += f"\n\nADDITIONAL CONTEXT: {prompt}"
+    else:
+        # Fallback to enhanced but non-connected prompt
+        saystory_prompt = f"""Create a STUNNING, ULTRA-PREMIUM carousel slide background that makes viewers say "WOW".
 
-Theme: {prompt}
-Platform: {platform}
-Style: {style}
+THEME: {prompt}
+PLATFORM: {platform.upper()} carousel slide
+STYLE: {style}
 
-CRITICAL DESIGN REQUIREMENTS:
-- MINIMAL and CLEAN design with lots of whitespace
-- Keep 60% of the image as EMPTY SPACE for text overlay
-- Simple, subtle gradient background (soft transitions)
-- Small decorative elements only (abstract shapes, simple icons at edges)
-- NO busy patterns, NO cluttered details, NO photo-heavy content
-- Professional, modern, professional look
-- Looks like premium saystory template (simple and elegant)
-- Text-friendly: center area completely clear for readable text
-- Use soft colors, gradients, or simple abstract geometric shapes
-- Minimize details to ensure text is always readable"""
+COLOR PALETTE:
+- Use bright but SOFT pastel colors like light coral pink (#FFB5BA), peach cream (#FFE5B4), light lavender (#D4B5FF)
+- Create beautiful gradient transitions between colors
+- Add subtle accent highlights with vibrant colors
+
+VISUAL ELEMENTS:
+- Flowing gradient waves or curved design elements
+- Subtle glass-morphism effects with frosted overlays
+- Delicate geometric accents at edges
+- Soft shadows and depth for premium feel
+- Modern, sleek aesthetic
+
+CRITICAL REQUIREMENTS:
+1. PREMIUM QUALITY - High-end design agency look
+2. TEXT-FRIENDLY - Keep center 40-50% clear for text overlay
+3. BRIGHT BUT SOFT - Pastel colors prominently but elegantly
+4. MODERN - Glass morphism, soft shadows, subtle depth
+5. UNIQUE - Not generic stock photo look
+
+AVOID:
+- Plain solid backgrounds
+- Cluttered busy designs
+- Generic stock aesthetics
+- Hard edges without softness"""
     
     try:
         response = client.images.generate(
@@ -741,7 +773,10 @@ def generate_slide_image(request):
             print(f"📝 Slide: {slide.title}")
             print(f"🎨 Prompt: {prompt}")
             
-            # Generate saystory image with branding
+            # Get total slides for connected design context
+            total_slides = Slide.objects.filter(project=project).count()
+            
+            # Generate saystory image with branding and enhanced prompts
             image_filename = generate_saystory_image(
                 prompt,
                 project.platform,
@@ -749,7 +784,11 @@ def generate_slide_image(request):
                 slide_id,
                 bg_color=slide.background_color,
                 profile_image_path=project.profile_image.path if project.profile_image else None,
-                brand_logo_path=project.brand_logo.path if project.brand_logo else None
+                brand_logo_path=project.brand_logo.path if project.brand_logo else None,
+                slide_number=slide.slide_number,
+                total_slides=total_slides,
+                project_id=project.id,
+                topic=project.topic
             )
             
             if image_filename:
@@ -1000,12 +1039,19 @@ def generate_all_images(request):
                     
                     print(f"🎨 Generating image for Slide {slide.slide_number}...")
                     
+                    # Use enhanced prompts with slide connectivity
                     image_filename = generate_saystory_image(
                         slide.image_prompt,
                         project.platform,
                         project.style,
                         slide.id,
-                        bg_color=slide.background_color
+                        bg_color=slide.background_color,
+                        profile_image_path=project.profile_image.path if project.profile_image else None,
+                        brand_logo_path=project.brand_logo.path if project.brand_logo else None,
+                        slide_number=slide.slide_number,
+                        total_slides=slides.count(),
+                        project_id=project.id,
+                        topic=project.topic
                     )
                     
                     if image_filename:
@@ -1199,6 +1245,9 @@ def generate_and_apply_image(request):
 
             # Build a saystory-friendly prompt from user description
             prompt = f"saystory-style minimal background for: {description}. Make it clean, leave a clear center area for text, flat/vector style, subtle colors."
+            
+            # Get total slides for context
+            total_slides = Slide.objects.filter(project=project).count()
 
             image_filename = generate_saystory_image(
                 prompt,
@@ -1207,7 +1256,11 @@ def generate_and_apply_image(request):
                 slide.id,
                 bg_color=slide.background_color,
                 profile_image_path=project.profile_image.path if project.profile_image else None,
-                brand_logo_path=project.brand_logo.path if project.brand_logo else None
+                brand_logo_path=project.brand_logo.path if project.brand_logo else None,
+                slide_number=slide.slide_number,
+                total_slides=total_slides,
+                project_id=project.id,
+                topic=project.topic
             )
 
             if image_filename:
