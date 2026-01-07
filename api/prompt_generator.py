@@ -930,10 +930,13 @@ Create a PREMIUM, HIGH-END carousel background with:
 
 ⛔ DO NOT INCLUDE:
 - NO text, NO typography, NO words, NO letters
-- NO logos, NO watermarks
+- NO logos, NO watermarks, NO brand marks
+- NO small squares, boxes, or placeholder rectangles in corners
+- NO profile picture placeholders or avatar frames
 - NO objects in the CENTER (only edges!)
 - NO busy/complex center backgrounds
 - NO disconnected random elements
+- NO UI elements or control buttons
 
 Create a CANVA-QUALITY, SEAMLESS carousel background that makes users want to swipe through!"""
     

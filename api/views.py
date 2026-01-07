@@ -1187,41 +1187,44 @@ AVOID:
         except Exception as proc_err:
             print(f"⚠️ Warning processing background color: {proc_err}")
 
-        # Add branding elements (profile image and logo)
-        try:
-            if profile_image_path or brand_logo_path:
-                from PIL import ImageDraw, ImageFont
-                img = Image.open(filepath).convert('RGBA')
-                
-                # Add profile image (LEFT BOTTOM corner, small)
-                if profile_image_path and os.path.exists(profile_image_path):
-                    profile = Image.open(profile_image_path).convert('RGBA')
-                    profile_size = 60  # Small size for bottom-left
-                    profile.thumbnail((profile_size, profile_size), Image.Resampling.LANCZOS)
-                    
-                    # Position: bottom-left with padding
-                    pos_x = 15  # Left padding
-                    pos_y = img.height - profile_size - 15  # Bottom padding
-                    img.paste(profile, (pos_x, pos_y), profile)
-                    print(f"✅ Profile image embedded (bottom-left)")
-                
-                # Add brand logo (RIGHT BOTTOM corner)
-                if brand_logo_path and os.path.exists(brand_logo_path):
-                    logo = Image.open(brand_logo_path).convert('RGBA')
-                    logo_size = 70  # Slightly larger for brand logo
-                    logo.thumbnail((logo_size, logo_size), Image.Resampling.LANCZOS)
-                    
-                    # Position: bottom-right with padding
-                    pos_x = img.width - logo_size - 15  # Right padding
-                    pos_y = img.height - logo_size - 15  # Bottom padding
-                    img.paste(logo, (pos_x, pos_y), logo)
-                    print(f"✅ Brand logo embedded (bottom-right)")
-                
-                # Save final image
-                img.convert('RGB').save(filepath, format='PNG')
-        
-        except Exception as brand_err:
-            print(f"⚠️ Warning adding branding: {brand_err}")
+        # BRANDING COMPOSITING DISABLED - branding is now handled as frontend overlay only
+        # Profile images and logos will NOT be baked into the generated image files
+        # They appear as separate overlay elements on the canvas (renderBrandingOverlay)
+        #
+        # try:
+        #     if profile_image_path or brand_logo_path:
+        #         from PIL import ImageDraw, ImageFont
+        #         img = Image.open(filepath).convert('RGBA')
+        #         
+        #         # Add profile image (LEFT BOTTOM corner, small)
+        #         if profile_image_path and os.path.exists(profile_image_path):
+        #             profile = Image.open(profile_image_path).convert('RGBA')
+        #             profile_size = 60  # Small size for bottom-left
+        #             profile.thumbnail((profile_size, profile_size), Image.Resampling.LANCZOS)
+        #             
+        #             # Position: bottom-left with padding
+        #             pos_x = 15  # Left padding
+        #             pos_y = img.height - profile_size - 15  # Bottom padding
+        #             img.paste(profile, (pos_x, pos_y), profile)
+        #             print(f"✅ Profile image embedded (bottom-left)")
+        #         
+        #         # Add brand logo (RIGHT BOTTOM corner)
+        #         if brand_logo_path and os.path.exists(brand_logo_path):
+        #             logo = Image.open(brand_logo_path).convert('RGBA')
+        #             logo_size = 70  # Slightly larger for brand logo
+        #             logo.thumbnail((logo_size, logo_size), Image.Resampling.LANCZOS)
+        #             
+        #             # Position: bottom-right with padding
+        #             pos_x = img.width - logo_size - 15  # Right padding
+        #             pos_y = img.height - logo_size - 15  # Bottom padding
+        #             img.paste(logo, (pos_x, pos_y), logo)
+        #             print(f"✅ Brand logo embedded (bottom-right)")
+        #         
+        #         # Save final image
+        #         img.convert('RGB').save(filepath, format='PNG')
+        # 
+        # except Exception as brand_err:
+        #     print(f"⚠️ Warning adding branding: {brand_err}")
 
         print(f"💾 Image saved: {filename}")
         return filename
@@ -1260,15 +1263,15 @@ def generate_slide_image(request):
             # Get total slides for connected design context
             total_slides = Slide.objects.filter(project=project).count()
             
-            # Generate saystory image with branding and enhanced prompts
+            # Generate saystory image WITHOUT branding (branding is added as overlay in frontend)
             image_filename = generate_saystory_image(
                 prompt,
                 project.platform,
                 project.style,
                 slide_id,
                 bg_color=slide.background_color,
-                profile_image_path=project.profile_image.path if project.profile_image else None,
-                brand_logo_path=project.brand_logo.path if project.brand_logo else None,
+                profile_image_path=None,  # Branding now handled as overlay in frontend
+                brand_logo_path=None,      # Branding now handled as overlay in frontend
                 slide_number=slide.slide_number,
                 total_slides=total_slides,
                 project_id=project.id,
@@ -1603,10 +1606,12 @@ def get_project_slides(request, project_id):
             
             slides_data.append(slide_dict)
         
-        # Include project data with profile_handle
+        # Include project data with branding info
         project_data = {
             'id': project.id,
             'profile_handle': project.profile_handle or '',
+            'profile_image_url': project.profile_image.url if project.profile_image else None,
+            'brand_logo_url': project.brand_logo.url if project.brand_logo else None,
             'topic': project.topic,
             'platform': project.platform,
             'style': project.style

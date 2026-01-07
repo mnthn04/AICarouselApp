@@ -3038,8 +3038,8 @@
             // 9. Neon Glow
 
             let geo = {
-                title: { x: 40, y: 50, w: width - 80, align: 'left', fontSize: 60, fontStyle: 'bold', rotation: 0 },
-                body: { x: 40, y: 300, w: width - 80, align: 'left', fontSize: 40, rotation: 0 },
+                title: { x: 40, y: 50, w: width - 80, align: 'left', fontSize: 50, fontStyle: 'bold', rotation: 0 },
+                body: { x: 40, y: 350, w: width - 80, align: 'left', fontSize: 36, rotation: 0 },
                 image: { x: 0, y: 0, w: 0, h: 0, visible: false, fit: 'contain', rotation: 0 },
                 card: { x: 0, y: 0, w: 0, h: 0, visible: false },
                 bg: { type: 'solid', fill: slide.background_color || '#FFFFFF', gradient: null },
@@ -3078,12 +3078,12 @@
                         shadowOpacity: 0.15
                     };
                     geo.title.align = 'left'; geo.title.x = 60; geo.title.w = contentW;
-                    geo.body = { x: 60, y: 240, w: contentW, align: 'left', fontFamily: 'Open Sans' };
-                    geo.separators.push({ points: [60, 200, width * 0.4, 200], strokeWidth: 3 }); // Thicker accent
+                    geo.body = { x: 60, y: 320, w: contentW, align: 'left', fontFamily: 'Open Sans' };
+                    geo.separators.push({ points: [60, 280, width * 0.4, 280], strokeWidth: 3 }); // Separator below title
                 } else {
                     geo.title.align = 'center'; geo.title.x = width * 0.1; geo.title.w = width * 0.8;
-                    geo.body.align = 'center'; geo.body.x = width * 0.15; geo.body.w = width * 0.7; geo.body.y = 280;
-                    geo.separators.push({ points: [width * 0.35, 220, width * 0.65, 220], strokeWidth: 2 });
+                    geo.body.align = 'center'; geo.body.x = width * 0.15; geo.body.w = width * 0.7; geo.body.y = 350;
+                    geo.separators.push({ points: [width * 0.35, 300, width * 0.65, 300], strokeWidth: 2 });
                 }
             }
             else if (vibe === 'minimal') {
@@ -3188,8 +3188,9 @@
                     imgH = cardH * 0.35; // ~35% height for image
                 }
 
-                // 3.5 Smart Icons
+                // 3.5 Smart Icons - DISABLED (emoji rendering issues)
                 // Position: Top Right Header of Card (Clean)
+                /*
                 const smartIcons = this.getIconsForText((slide.title || '') + ' ' + (slide.description || ''), 3);
                 if (smartIcons.length > 0) {
                     geo.icons = smartIcons.map((icon, i) => ({
@@ -3201,6 +3202,7 @@
                         align: 'center'
                     }));
                 }
+                */
 
                 // 4. Calculate Spacing
                 const gap = 50;
@@ -3463,46 +3465,27 @@
             }
 
 
-            // --- GLOBAL SMART ICON FALLBACK ---
-            // If the specific layout didn't define icons, we add them by default.
-            // If the specific layout didn't define icons, we add them by default.
-            // --- GLOBAL SMART ICON FALLBACK ---
-            // If the specific layout didn't define icons, we add them by default.
+            // --- SMART ICONS DISABLED ---
+            // The emoji icons were not rendering properly (showing as question marks).
+            // Feature disabled until a proper icon solution is implemented.
+            /*
             if (!geo.icons || geo.icons.length === 0) {
                 const iconSearchText = (slide.title || '') + ' ' + (slide.description || '');
-                console.log('🔍 Smart Icon Fallback Triggered for text:', iconSearchText);
-
                 const smartIcons = this.getIconsForText(iconSearchText, 3);
-                console.log('🔍 Found Smart Icons:', smartIcons);
-
                 if (smartIcons.length > 0) {
-                    // Default Position: Top Right
                     let iconBaseY = 40;
-
-                    // Specific overrides for layouts that might overlap
-                    if (vibe === 'magazine') iconBaseY = 20; // Push higher for magazine
-
+                    if (vibe === 'magazine') iconBaseY = 20;
                     geo.icons = smartIcons.map((icon, i) => ({
                         text: icon,
                         x: width - 80 - (i * 60),
                         y: iconBaseY,
                         w: 50,
                         fontSize: 40,
-                        align: 'center',
-                        shadowColor: 'black',
-                        shadowBlur: 5,
-                        shadowOpacity: 0.3
+                        align: 'center'
                     }));
-                    console.log('✅ Assigned icons to geo object:', geo.icons);
-
-                    // DEBUG: Visual confirmation dot at top-left
-                    /* this.layer.add(new Konva.Circle({
-                         x: 50, y: 50, radius: 20, fill: 'red', name: 'debug_dot'
-                     }));*/
                 }
-            } else {
-                console.log('ℹ️ Layout already has icons:', geo.icons);
             }
+            */
 
             // --- RENDER EXECUTION ---
 
@@ -3540,6 +3523,9 @@
             } else {
                 this.layer.add(new Konva.Rect({ x: 0, y: 0, width: width, height: height, fill: bgColor, name: 'background_base' }));
             }
+
+            // 1.5 Decorative Background Shapes (subtle, behind all content)
+            this.renderDecorativeShapes(width, height, bgColor, vibe);
 
             // 2. Shapes (Geometric / Creative)
             if (geo.shapes && geo.shapes.length > 0) {
@@ -3734,6 +3720,9 @@
                 icon.moveToTop();
             });
 
+            // Render branding overlay (profile + handle on left, logo on right)
+            this.renderBrandingOverlay(width, height);
+
             this.layer.batchDraw();
             console.log('✅ 9-Master Layout Rendered (Strict)');
         }
@@ -3775,6 +3764,332 @@
                 }
             });
             this.layer.batchDraw();
+        }
+
+        renderBrandingOverlay(width, height) {
+            // Renders profile picture + handle (bottom-left) and brand logo (bottom-right)
+            const padding = 30;
+            const brandingSize = 60; // Equal size for both profile pic and logo
+            const handleFontSize = 18;
+
+            if (!this.project) return;
+
+            // Get the current slide's font color for the handle text
+            const slide = this.slides[this.currentSlide];
+            const handleColor = slide?.font_color || '#FFFFFF';
+
+            const brandingGroup = new Konva.Group({ name: 'branding_overlay', listening: false });
+
+            // --- Profile Picture (Bottom-Left) - Circular using Group clip ---
+            if (this.project.profile_image_url) {
+                const profileX = padding;
+                const profileY = height - padding - brandingSize;
+
+                // Create a clipping group for circular effect
+                const profileClipGroup = new Konva.Group({
+                    x: profileX,
+                    y: profileY,
+                    clipFunc: (ctx) => {
+                        ctx.arc(brandingSize / 2, brandingSize / 2, brandingSize / 2, 0, Math.PI * 2, true);
+                    },
+                    listening: false
+                });
+
+                const imgObj = new Image();
+                imgObj.crossOrigin = 'anonymous';
+                imgObj.onload = () => {
+                    const profileImg = new Konva.Image({
+                        x: 0,
+                        y: 0,
+                        image: imgObj,
+                        width: brandingSize,
+                        height: brandingSize,
+                        listening: false
+                    });
+                    profileClipGroup.add(profileImg);
+                    brandingGroup.moveToTop();
+                    this.layer.batchDraw();
+                };
+                imgObj.onerror = () => console.warn('Failed to load profile image');
+                imgObj.src = this.project.profile_image_url;
+
+                brandingGroup.add(profileClipGroup);
+            }
+
+            // Handle Text (next to profile picture) - uses slide font color
+            if (this.project.profile_handle) {
+                const handleX = this.project.profile_image_url ? padding + brandingSize + 12 : padding;
+                const handleY = height - padding - brandingSize / 2 - handleFontSize / 2;
+
+                const handleText = new Konva.Text({
+                    x: handleX,
+                    y: handleY,
+                    text: `@${this.project.profile_handle}`,
+                    fontSize: handleFontSize,
+                    fontFamily: 'Inter, Arial, sans-serif',
+                    fill: handleColor,
+                    fontStyle: 'bold',
+                    listening: false
+                });
+                brandingGroup.add(handleText);
+            }
+
+            // --- Brand Logo (Bottom-Right) - Circular using Group clip ---
+            if (this.project.brand_logo_url) {
+                const logoX = width - padding - brandingSize;
+                const logoY = height - padding - brandingSize;
+
+                // Create a clipping group for circular effect
+                const logoClipGroup = new Konva.Group({
+                    x: logoX,
+                    y: logoY,
+                    clipFunc: (ctx) => {
+                        ctx.arc(brandingSize / 2, brandingSize / 2, brandingSize / 2, 0, Math.PI * 2, true);
+                    },
+                    listening: false
+                });
+
+                const logoObj = new Image();
+                logoObj.crossOrigin = 'anonymous';
+                logoObj.onload = () => {
+                    const logoImg = new Konva.Image({
+                        x: 0,
+                        y: 0,
+                        image: logoObj,
+                        width: brandingSize,
+                        height: brandingSize,
+                        listening: false
+                    });
+                    logoClipGroup.add(logoImg);
+                    brandingGroup.moveToTop();
+                    this.layer.batchDraw();
+                };
+                logoObj.onerror = () => console.warn('Failed to load brand logo');
+                logoObj.src = this.project.brand_logo_url;
+
+                brandingGroup.add(logoClipGroup);
+            }
+
+            this.layer.add(brandingGroup);
+        }
+
+        generateDecorativeShapes(width, height, bgColor, vibe) {
+            // Generate 2-5 premium decorative background shapes
+            // These add visual depth without distracting from content
+
+            const shapes = [];
+            const shapeCount = 2 + Math.floor(Math.random() * 3); // 2-4 shapes
+
+            // Derive accent color from background (slightly darker or contrasting)
+            const accentColor = this.getDerivedAccentColor(bgColor);
+
+            // Define safe zones based on vibe (where content typically goes)
+            const safeZones = this.getLayoutSafeZones(width, height, vibe);
+
+            // Shape types: circles, roundedRects, blobs
+            const shapeTypes = ['circle', 'roundedRect', 'blob', 'halo'];
+
+            for (let i = 0; i < shapeCount; i++) {
+                const shapeType = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
+                const opacity = 0.05 + Math.random() * 0.07; // 5-12% opacity
+
+                // Generate position avoiding safe zones
+                const pos = this.getDecorativePosition(width, height, safeZones, i, shapeCount);
+                const size = this.getDecorativeSize(width, height, shapeType);
+
+                if (shapeType === 'circle' || shapeType === 'halo') {
+                    const isHalo = shapeType === 'halo';
+                    shapes.push({
+                        type: 'circle',
+                        x: pos.x,
+                        y: pos.y,
+                        radius: size.radius,
+                        fill: isHalo ? null : accentColor,
+                        stroke: isHalo ? accentColor : null,
+                        strokeWidth: isHalo ? 2 : 0,
+                        opacity: opacity,
+                        name: 'decorative_shape'
+                    });
+                } else if (shapeType === 'roundedRect') {
+                    shapes.push({
+                        type: 'rect',
+                        x: pos.x - size.w / 2,
+                        y: pos.y - size.h / 2,
+                        width: size.w,
+                        height: size.h,
+                        fill: accentColor,
+                        cornerRadius: size.w * 0.3,
+                        opacity: opacity,
+                        rotation: pos.rotation || 0,
+                        name: 'decorative_shape'
+                    });
+                } else if (shapeType === 'blob') {
+                    // Create organic blob using bezier-like path (simplified as ellipse)
+                    shapes.push({
+                        type: 'ellipse',
+                        x: pos.x,
+                        y: pos.y,
+                        radiusX: size.w / 2,
+                        radiusY: size.h / 2,
+                        fill: accentColor,
+                        opacity: opacity,
+                        rotation: Math.random() * 45,
+                        name: 'decorative_shape'
+                    });
+                }
+            }
+
+            return shapes;
+        }
+
+        getDerivedAccentColor(bgColor) {
+            // Derive a subtle accent color from background
+            // For light backgrounds, use a slightly darker/muted version
+            // For dark backgrounds, use a slightly lighter version
+
+            try {
+                // Simple hex to RGB
+                const hex = bgColor.replace('#', '');
+                const r = parseInt(hex.substr(0, 2), 16);
+                const g = parseInt(hex.substr(2, 2), 16);
+                const b = parseInt(hex.substr(4, 2), 16);
+
+                const brightness = (r + g + b) / 3;
+
+                if (brightness > 128) {
+                    // Light background - use darker accent
+                    const factor = 0.85;
+                    return `rgb(${Math.floor(r * factor)}, ${Math.floor(g * factor)}, ${Math.floor(b * factor)})`;
+                } else {
+                    // Dark background - use lighter accent
+                    const factor = 1.3;
+                    return `rgb(${Math.min(255, Math.floor(r * factor))}, ${Math.min(255, Math.floor(g * factor))}, ${Math.min(255, Math.floor(b * factor))})`;
+                }
+            } catch (e) {
+                return 'rgba(128, 128, 128, 0.5)'; // Fallback neutral
+            }
+        }
+
+        getLayoutSafeZones(width, height, vibe) {
+            // Define content zones to avoid for each layout type
+            const zones = [];
+
+            if (vibe === 'corporate') {
+                // Left side has text, right side has image
+                zones.push({ x: 40, y: 60, w: width * 0.5, h: height * 0.8 }); // Text zone
+                zones.push({ x: width * 0.55, y: 100, w: width * 0.42, h: height * 0.7 }); // Image zone
+            } else if (vibe === 'split') {
+                // Left half image, right half text
+                zones.push({ x: 0, y: 0, w: width * 0.5, h: height }); // Image
+                zones.push({ x: width * 0.55, y: 80, w: width * 0.4, h: height * 0.8 }); // Text
+            } else if (vibe === 'card') {
+                // Central card area
+                zones.push({ x: width * 0.1, y: height * 0.1, w: width * 0.8, h: height * 0.8 });
+            } else if (vibe === 'minimal') {
+                // Center content area
+                zones.push({ x: width * 0.15, y: height * 0.1, w: width * 0.7, h: height * 0.8 });
+            } else {
+                // Default - general center avoidance
+                zones.push({ x: width * 0.2, y: height * 0.15, w: width * 0.6, h: height * 0.7 });
+            }
+
+            return zones;
+        }
+
+        getDecorativePosition(width, height, safeZones, index, total) {
+            // Place shapes in corners and edges, avoiding safe zones
+            const corners = [
+                { x: width * 0.1, y: height * 0.1 },          // Top-left
+                { x: width * 0.9, y: height * 0.1 },          // Top-right
+                { x: width * 0.1, y: height * 0.9 },          // Bottom-left
+                { x: width * 0.9, y: height * 0.9 },          // Bottom-right
+                { x: width * 0.05, y: height * 0.5 },         // Left edge
+                { x: width * 0.95, y: height * 0.5 },         // Right edge
+                { x: width * 0.5, y: height * 0.05 },         // Top edge
+                { x: width * 0.5, y: height * 0.95 },         // Bottom edge
+            ];
+
+            // Shuffle and pick based on index
+            const shuffled = corners.sort(() => Math.random() - 0.5);
+            const pos = shuffled[index % shuffled.length];
+
+            // Add some randomness
+            pos.x += (Math.random() - 0.5) * width * 0.15;
+            pos.y += (Math.random() - 0.5) * height * 0.15;
+            pos.rotation = Math.random() * 30 - 15;
+
+            return pos;
+        }
+
+        getDecorativeSize(width, height, shapeType) {
+            const baseSize = Math.min(width, height);
+
+            if (shapeType === 'circle' || shapeType === 'halo') {
+                return { radius: baseSize * (0.08 + Math.random() * 0.15) }; // 8-23% of canvas
+            } else if (shapeType === 'roundedRect') {
+                return {
+                    w: baseSize * (0.1 + Math.random() * 0.15),
+                    h: baseSize * (0.08 + Math.random() * 0.12)
+                };
+            } else {
+                // Blob/ellipse
+                return {
+                    w: baseSize * (0.12 + Math.random() * 0.18),
+                    h: baseSize * (0.08 + Math.random() * 0.12)
+                };
+            }
+        }
+
+        renderDecorativeShapes(width, height, bgColor, vibe) {
+            // Generate and render decorative background shapes
+            const shapes = this.generateDecorativeShapes(width, height, bgColor, vibe);
+
+            shapes.forEach(shape => {
+                let node;
+                if (shape.type === 'circle') {
+                    node = new Konva.Circle({
+                        x: shape.x,
+                        y: shape.y,
+                        radius: shape.radius,
+                        fill: shape.fill,
+                        stroke: shape.stroke,
+                        strokeWidth: shape.strokeWidth || 0,
+                        opacity: shape.opacity,
+                        listening: false,
+                        name: 'decorative_shape'
+                    });
+                } else if (shape.type === 'rect') {
+                    node = new Konva.Rect({
+                        x: shape.x,
+                        y: shape.y,
+                        width: shape.width,
+                        height: shape.height,
+                        fill: shape.fill,
+                        cornerRadius: shape.cornerRadius || 0,
+                        opacity: shape.opacity,
+                        rotation: shape.rotation || 0,
+                        listening: false,
+                        name: 'decorative_shape'
+                    });
+                } else if (shape.type === 'ellipse') {
+                    node = new Konva.Ellipse({
+                        x: shape.x,
+                        y: shape.y,
+                        radiusX: shape.radiusX,
+                        radiusY: shape.radiusY,
+                        fill: shape.fill,
+                        opacity: shape.opacity,
+                        rotation: shape.rotation || 0,
+                        listening: false,
+                        name: 'decorative_shape'
+                    });
+                }
+
+                if (node) {
+                    this.layer.add(node);
+                    node.moveToBottom(); // Ensure it's behind content
+                }
+            });
         }
 
         async loadImageAsBackground(imageUrl, width, height) {
