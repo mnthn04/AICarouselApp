@@ -1,0 +1,1136 @@
+{% extends 'api/base.html' %}
+{% load static %}
+
+{% block title %}AI Carousel Generator Pro{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section" role="banner">
+    <div class="hero-container">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Create <span class="gradient-text">Stunning</span> Social Media Carousels
+            </h1>
+            <p class="hero-subtitle">
+                Transform your ideas into professional carousel posts with AI-powered content generation,
+                beautiful backgrounds, and platform-optimized designs.
+            </p>
+            <div class="hero-stats" role="region" aria-label="Statistics">
+                <div class="stat">
+                    <span class="stat-number">10K+</span>
+                    <span class="stat-label">Carousels Created</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">50+</span>
+                    <span class="stat-label">Templates</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">AI-Powered</span>
+                    <span class="stat-label">Content Generation</span>
+                </div>
+            </div>
+            <a href="#generator" class="btn btn-primary btn-large scroll-to-generator" role="button"
+                aria-label="Start creating carousels">
+                <i class="fas fa-magic" aria-hidden="true"></i>
+                Start Creating
+            </a>
+        </div>
+        <div class="hero-visual" role="presentation">
+            <div class="carousel-showcase" aria-label="Carousel examples">
+                <div class="showcase-slide slide-1" role="img" aria-label="Professional LinkedIn carousel example">
+                    <div class="slide-content">
+                        <h3>Professional</h3>
+                        <p>LinkedIn Optimized</p>
+                    </div>
+                </div>
+                <div class="showcase-slide slide-2" role="img" aria-label="Creative Instagram carousel example">
+                    <div class="slide-content">
+                        <h3>Creative</h3>
+                        <p>Instagram Ready</p>
+                    </div>
+                </div>
+                <div class="showcase-slide slide-3" role="img" aria-label="Modern brand carousel example">
+                    <div class="slide-content">
+                        <h3>Modern</h3>
+                        <p>Brand Perfect</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="main-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <i class="fas fa-palette" aria-hidden="true"></i>
+                <span>Carousel Forge</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'index' %}" class="nav-item active" aria-current="page">
+                <i class="fas fa-magic" aria-hidden="true"></i>
+                <span>Generator</span>
+            </a>
+            <a href="{% url 'templates' %}" class="nav-item">
+                <i class="fas fa-th-large" aria-hidden="true"></i>
+                <span>Templates</span>
+            </a>
+            <a href="{% url 'recent' %}" class="nav-item">
+                <i class="fas fa-history" aria-hidden="true"></i>
+                <span>Recent</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="upgrade-box">
+                <div class="upgrade-icon">
+                    <i class="fas fa-crown" aria-hidden="true"></i>
+                </div>
+                <h4>Pro Features</h4>
+                <p>Unlock unlimited generations & premium templates</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" role="main">
+        <!-- Wizard Progress Steps -->
+        <div class="wizard-progress" id="wizardProgress">
+            <div class="progress-step active" data-step="1">
+                <div class="step-number">1</div>
+                <span class="step-label">Topic & Settings</span>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="2">
+                <div class="step-number">2</div>
+                <span class="step-label">Choose Style</span>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="3">
+                <div class="step-number">3</div>
+                <span class="step-label">Generate</span>
+            </div>
+        </div>
+
+        <!-- Step 1: Topic & Settings -->
+        <div class="wizard-step active" id="step1" data-step="1">
+            <div class="content-panel" id="generatorPanel">
+                <div class="panel-header">
+                    <h1><i class="fas fa-sparkles" aria-hidden="true"></i> Create Your Carousel</h1>
+                    <p>Describe your topic and we'll generate 3 different content styles for you to choose from</p>
+                </div>
+
+                <div class="panel-content">
+                    <form id="previewForm" class="carousel-form" role="form" aria-label="Carousel generation form">
+                        {% csrf_token %}
+
+                        <!-- Branding Section -->
+                        <div class="form-section branding-section">
+                            <h3 class="section-title-small">
+                                <i class="fas fa-building" aria-hidden="true"></i>
+                                Brand Assets
+                            </h3>
+                            <div class="branding-grid">
+                                <div class="brand-upload">
+                                    <label class="upload-label" for="profileImage" tabindex="0" role="button"
+                                        aria-label="Upload profile picture">
+                                        <div class="upload-icon">
+                                            <i class="fas fa-user-circle" aria-hidden="true"></i>
+                                        </div>
+                                        <span>Profile Picture</span>
+                                        <input type="file" id="profileImage" accept="image/*" class="file-input"
+                                            aria-describedby="profile-help">
+                                    </label>
+                                    <div class="upload-preview" id="profilePreview" role="img"
+                                        aria-label="Profile picture preview"></div>
+                                </div>
+
+                                <div class="brand-upload">
+                                    <label class="upload-label" for="brandLogo" tabindex="0" role="button"
+                                        aria-label="Upload brand logo">
+                                        <div class="upload-icon">
+                                            <i class="fas fa-image" aria-hidden="true"></i>
+                                        </div>
+                                        <span>Brand Logo</span>
+                                        <input type="file" id="brandLogo" accept="image/*" class="file-input"
+                                            aria-describedby="logo-help">
+                                    </label>
+                                    <div class="upload-preview" id="logoPreview" role="img" aria-label="Logo preview">
+                                    </div>
+                                </div>
+
+                                <div class="brand-input">
+                                    <label for="profileHandle" class="form-label">
+                                        <i class="fab fa-instagram" aria-hidden="true"></i>
+                                        Social Handle
+                                    </label>
+                                    <input type="text" id="profileHandle" name="profile_handle" placeholder="@yourbrand"
+                                        class="form-input" aria-describedby="handle-help">
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr style="border: none; border-top: 1px solid var(--light-gray); margin: 1.5rem 0;"
+                            aria-hidden="true">
+
+                        <!-- Content Section -->
+                        <div class="form-section">
+                            <label for="topic" class="form-label">
+                                <i class="fas fa-edit" aria-hidden="true"></i>
+                                Content Description
+                            </label>
+                            <textarea id="topic" name="topic" class="form-textarea"
+                                placeholder="Describe what your carousel should be about. Be specific about the topic, tone, and key messages you want to convey..."
+                                required aria-describedby="topic-help"></textarea>
+                            <div class="form-hint" id="topic-help">
+                                <i class="fas fa-lightbulb" aria-hidden="true"></i>
+                                Tip: The more detailed your description, the better the AI-generated content will be.
+                            </div>
+                        </div>
+
+                        <!-- Platform & Style Selection -->
+                        <div class="form-section">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label" for="platform">
+                                        <i class="fas fa-globe" aria-hidden="true"></i>
+                                        Platform
+                                    </label>
+                                    <select id="platform" name="platform" class="form-select" required
+                                        aria-describedby="platform-help">
+                                        <option value="instagram">Instagram</option>
+                                        <option value="linkedin">LinkedIn</option>
+                                        <option value="twitter">Twitter</option>
+                                        <option value="presentation">Presentation</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="style">
+                                        <i class="fas fa-palette" aria-hidden="true"></i>
+                                        Design Style
+                                    </label>
+                                    <select id="style" name="style" class="form-select" required
+                                        aria-describedby="style-help">
+                                        <option value="modern">Modern</option>
+                                        <option value="professional">Professional</option>
+                                        <option value="creative">Creative</option>
+                                        <option value="vibrant">Vibrant</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Platform Preview -->
+                            <div class="platform-preview-section">
+                                <h4>Platform Preview</h4>
+                                <div class="platform-cards" role="radiogroup" aria-label="Platform selection">
+                                    <div class="platform-card instagram-card active" data-platform="instagram"
+                                        role="radio" aria-checked="true" tabindex="0">
+                                        <i class="fab fa-instagram" aria-hidden="true"></i>
+                                        <span>Instagram</span>
+                                        <small>1080 × 1080</small>
+                                    </div>
+                                    <div class="platform-card linkedin-card" data-platform="linkedin" role="radio"
+                                        aria-checked="false" tabindex="0">
+                                        <i class="fab fa-linkedin" aria-hidden="true"></i>
+                                        <span>LinkedIn</span>
+                                        <small>1080 × 1080</small>
+                                    </div>
+                                    <div class="platform-card twitter-card" data-platform="twitter" role="radio"
+                                        aria-checked="false" tabindex="0">
+                                        <i class="fab fa-twitter" aria-hidden="true"></i>
+                                        <span>Twitter</span>
+                                        <small>1200 × 675</small>
+                                    </div>
+                                    <div class="platform-card presentation-card" data-platform="presentation"
+                                        role="radio" aria-checked="false" tabindex="0">
+                                        <i class="fas fa-desktop" aria-hidden="true"></i>
+                                        <span>Presentation</span>
+                                        <small>1920 × 1080</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide Count -->
+                        <div class="form-section">
+                            <div class="range-container">
+                                <label class="form-label" for="slide_count">
+                                    <i class="fas fa-layer-group" aria-hidden="true"></i>
+                                    Number of Slides
+                                </label>
+                                <div class="range-wrapper">
+                                    <input type="number" id="slide_count" name="slide_count" min="1" max="20" value="5"
+                                        class="slide-count-input" aria-describedby="slide-help">
+                                </div>
+                            </div>
+                            <div class="form-hint" id="slide-help">
+                                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                                Recommended: 3-10 slides for optimal engagement
+                            </div>
+                        </div>
+
+                        <!-- Generate Preview Button -->
+                        <div class="form-actions">
+                            <button type="submit" id="generatePreviewBtn" class="btn-generate"
+                                aria-describedby="generate-help">
+                                <i class="fas fa-magic" aria-hidden="true"></i>
+                                Generate Content Previews
+                            </button>
+                            <div class="form-hint" id="generate-help">
+                                <i class="fas fa-clock" aria-hidden="true"></i>
+                                We'll create 3 different content styles for you to choose from
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Features List -->
+                    <div class="features-list" role="region" aria-labelledby="features-title">
+                        <h4 id="features-title"><i class="fas fa-star" aria-hidden="true"></i> What you'll get:</h4>
+                        <ul role="list">
+                            <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> 3 different content
+                                styles to choose from</li>
+                            <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> AI-generated
+                                professional content</li>
+                            <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Platform-optimized
+                                dimensions</li>
+                            <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Beautiful AI-generated
+                                images</li>
+                            <li role="listitem"><i class="fas fa-check" aria-hidden="true"></i> Download-ready slides
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Choose Content Style -->
+        <div class="wizard-step" id="step2" data-step="2" style="display: none;">
+            <div class="content-panel">
+                <div class="panel-header">
+                    <h1><i class="fas fa-palette" aria-hidden="true"></i> Choose Your Content Style</h1>
+                    <p>We've generated 3 different content approaches. Select the one that best fits your brand.</p>
+                </div>
+
+                <div class="panel-content">
+                    <div class="preview-grid" id="previewGrid">
+                        <!-- Preview cards will be dynamically inserted here -->
+                    </div>
+
+                    <div class="step-actions">
+                        <button type="button" class="btn-secondary" id="backToStep1">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                            Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Confirm & Generate Images -->
+        <div class="wizard-step" id="step3" data-step="3" style="display: none;">
+            <div class="content-panel">
+                <div class="panel-header">
+                    <h1><i class="fas fa-images" aria-hidden="true"></i> Ready to Generate Images</h1>
+                    <p>Your content is ready! Click below to generate beautiful AI images for each slide.</p>
+                </div>
+
+                <div class="panel-content">
+                    <div class="selected-preview-summary" id="selectedPreviewSummary">
+                        <!-- Selected preview summary will be shown here -->
+                    </div>
+
+                    <div class="generation-info">
+                        <div class="info-card">
+                            <i class="fas fa-layer-group" aria-hidden="true"></i>
+                            <span id="summarySlideCount">5</span> Slides
+                        </div>
+                        <div class="info-card">
+                            <i class="fas fa-th-large" aria-hidden="true"></i>
+                            Varied Layouts
+                        </div>
+                        <div class="info-card">
+                            <i class="fas fa-image" aria-hidden="true"></i>
+                            AI Images
+                        </div>
+                    </div>
+
+                    <div class="step-actions">
+                        <button type="button" class="btn-secondary" id="backToStep2">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                            Back
+                        </button>
+                        <button type="button" class="btn-generate" id="createProjectBtn">
+                            <i class="fas fa-rocket" aria-hidden="true"></i>
+                            Create Carousel & Generate Images
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Showcase -->
+        <section class="features-showcase" role="region" aria-labelledby="features-heading">
+            <div class="features-container">
+                <h2 class="section-title" id="features-heading">Why Choose Carousel Forge?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain" aria-hidden="true"></i>
+                        </div>
+                        <h3>AI-Powered Content</h3>
+                        <p>Generate engaging, professional content tailored to your brand and audience.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt" aria-hidden="true"></i>
+                        </div>
+                        <h3>Platform Optimized</h3>
+                        <p>Perfect dimensions and layouts for Instagram, LinkedIn, and more.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-palette" aria-hidden="true"></i>
+                        </div>
+                        <h3>Beautiful Design</h3>
+                        <p>Beautiful, modern backgrounds with professional typography.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-clock" aria-hidden="true"></i>
+                        </div>
+                        <h3>Lightning Fast</h3>
+                        <p>Create complete carousels in minutes, not hours.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading" class="loading-overlay" style="display: none;" role="dialog" aria-modal="true"
+    aria-labelledby="loading-title" aria-describedby="loading-desc">
+    <div class="loading-card">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <h3 id="loading-title">Generating Content Previews</h3>
+        <p id="loading-desc">Creating 3 different styles for you...</p>
+        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+            aria-label="Generation progress">
+            <div class="progress" aria-hidden="true"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Wizard Progress Styles */
+    .wizard-progress {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        margin-bottom: 1rem;
+        gap: 1rem;
+    }
+
+    .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--light-gray, #e5e7eb);
+        color: var(--dark-gray, #6b7280);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .progress-step.active .step-number,
+    .progress-step.completed .step-number {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .progress-step.completed .step-number::after {
+        content: '✓';
+    }
+
+    .step-label {
+        font-size: 0.85rem;
+        color: var(--dark-gray, #6b7280);
+        font-weight: 500;
+    }
+
+    .progress-step.active .step-label {
+        color: var(--primary-color, #667eea);
+        font-weight: 600;
+    }
+
+    .progress-line {
+        width: 80px;
+        height: 3px;
+        background: var(--light-gray, #e5e7eb);
+        border-radius: 2px;
+    }
+
+    .progress-line.completed {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    /* Preview Grid Styles */
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    @media (max-width: 1024px) {
+        .preview-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .preview-card {
+        background: var(--card-bg, #ffffff);
+        border-radius: 16px;
+        padding: 1.5rem;
+        border: 2px solid var(--light-gray, #e5e7eb);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .preview-card:hover {
+        border-color: var(--primary-color, #667eea);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
+    }
+
+    .preview-card.selected {
+        border-color: var(--primary-color, #667eea);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    }
+
+    .preview-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--light-gray, #e5e7eb);
+    }
+
+    .preview-variant-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-color, #1f2937);
+    }
+
+    .preview-variant-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: var(--light-gray, #e5e7eb);
+        color: var(--dark-gray, #6b7280);
+    }
+
+    .preview-slides {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-height: 350px;
+        overflow-y: auto;
+    }
+
+    .preview-slide-item {
+        padding: 0.75rem;
+        background: var(--background, #f9fafb);
+        border-radius: 8px;
+        border-left: 3px solid var(--primary-color, #667eea);
+    }
+
+    .preview-slide-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-color, #1f2937);
+        margin-bottom: 0.25rem;
+    }
+
+    .preview-slide-desc {
+        font-size: 0.8rem;
+        color: var(--dark-gray, #6b7280);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .preview-card-footer {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--light-gray, #e5e7eb);
+    }
+
+    .select-preview-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .select-preview-btn:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Step Actions */
+    .step-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .btn-secondary {
+        padding: 0.75rem 1.5rem;
+        border: 2px solid var(--light-gray, #e5e7eb);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text-color, #1f2937);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--primary-color, #667eea);
+        color: var(--primary-color, #667eea);
+    }
+
+    /* Generation Info Cards */
+    .generation-info {
+        display: flex;
+        gap: 1.5rem;
+        justify-content: center;
+        margin: 2rem 0;
+    }
+
+    .info-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1.5rem 2rem;
+        background: var(--card-bg, #ffffff);
+        border-radius: 12px;
+        border: 1px solid var(--light-gray, #e5e7eb);
+    }
+
+    .info-card i {
+        font-size: 1.5rem;
+        color: var(--primary-color, #667eea);
+    }
+
+    .info-card span {
+        font-weight: 600;
+        color: var(--text-color, #1f2937);
+    }
+
+    /* Selected Preview Summary */
+    .selected-preview-summary {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .summary-header i {
+        color: var(--primary-color, #667eea);
+        font-size: 1.25rem;
+    }
+
+    .summary-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .summary-slides {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .summary-slide {
+        background: white;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border-left: 3px solid var(--primary-color, #667eea);
+    }
+
+    .summary-slide strong {
+        font-size: 0.85rem;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .summary-slide p {
+        font-size: 0.75rem;
+        color: var(--dark-gray, #6b7280);
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function () {
+        // State management
+        let currentStep = 1;
+        let sessionId = null;
+        let selectedVariant = null;
+        let previewsData = null;
+
+        // Smooth scrolling for navigation
+        $('.scroll-to-section').click(function (e) {
+            e.preventDefault();
+            const target = $($(this).attr('href'));
+            if (target.length) {
+                $('html, body').animate({
+                    scrollTop: target.offset().top - 100
+                }, 800);
+            }
+        });
+
+        $('.scroll-to-generator').click(function (e) {
+            e.preventDefault();
+            const target = $('#generatorPanel');
+            if (target.length) {
+                $('html, body').animate({
+                    scrollTop: target.offset().top - 100
+                }, 800);
+            }
+        });
+
+        // Platform selection with improved accessibility
+        $('.platform-card').click(function () {
+            $('.platform-card').removeClass('active').attr('aria-checked', 'false');
+            $(this).addClass('active').attr('aria-checked', 'true');
+            const platform = $(this).data('platform');
+            $('#platform').val(platform).trigger('change');
+        });
+
+        // Keyboard navigation for platform cards
+        $('.platform-card').keydown(function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                $(this).click();
+            }
+        });
+
+        // Update platform preview based on selection
+        $('#platform').change(function () {
+            const platform = $(this).val();
+            $('.platform-card').removeClass('active').attr('aria-checked', 'false');
+            $(`.platform-card[data-platform="${platform}"]`).addClass('active').attr('aria-checked', 'true');
+        });
+
+        // File upload handlers with preview
+        $('#profileImage').change(function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#profilePreview').html(`<img src="${e.target.result}" alt="Profile preview">`).show();
+                    $('#profilePreview').siblings('.upload-label').hide();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        $('#brandLogo').change(function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    $('#logoPreview').html(`<img src="${e.target.result}" alt="Logo preview">`).show();
+                    $('#logoPreview').siblings('.upload-label').hide();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Click on preview to upload again
+        $(document).on('click', '#profilePreview, #logoPreview', function () {
+            const inputId = $(this).attr('id') === 'profilePreview' ? '#profileImage' : '#brandLogo';
+            $(inputId).click();
+        });
+
+        // Step navigation functions
+        function goToStep(step) {
+            // Update progress
+            $('.wizard-step').hide();
+            $(`#step${step}`).show();
+
+            // Update progress indicators
+            $('.progress-step').removeClass('active completed');
+            $('.progress-line').removeClass('completed');
+
+            for (let i = 1; i < step; i++) {
+                $(`.progress-step[data-step="${i}"]`).addClass('completed');
+            }
+            $(`.progress-step[data-step="${step}"]`).addClass('active');
+
+            // Mark lines as completed
+            $('.progress-line').each(function (index) {
+                if (index < step - 1) {
+                    $(this).addClass('completed');
+                }
+            });
+
+            currentStep = step;
+
+            // Scroll to top of wizard
+            $('html, body').animate({
+                scrollTop: $('#wizardProgress').offset().top - 100
+            }, 300);
+        }
+
+        // Step 1: Generate Content Previews
+        $('#previewForm').submit(function (e) {
+            e.preventDefault();
+
+            const topic = $('#topic').val().trim();
+            if (!topic) {
+                toastr.error('Please enter your content description');
+                $('#topic').focus();
+                return;
+            }
+
+            if (topic.length < 10) {
+                toastr.error('Please provide more detailed content (at least 10 characters)');
+                $('#topic').focus();
+                return;
+            }
+
+            // Show loading
+            $('#loading').fadeIn();
+            $('#loading-title').text('Generating Content Previews');
+            $('#loading-desc').text('Creating 3 different styles for you...');
+            startProgressAnimation();
+
+            const formData = {
+                topic: topic,
+                platform: $('#platform').val(),
+                style: $('#style').val(),
+                slide_count: parseInt($('#slide_count').val()) || 5
+            };
+
+            // Generate previews
+            $.ajax({
+                url: '/api/generate-previews/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                timeout: 180000, // 3 minutes
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function (response) {
+                    $('#loading').fadeOut();
+
+                    if (response.success) {
+                        sessionId = response.session_id;
+                        previewsData = response.previews;
+                        renderPreviews(response.previews);
+                        goToStep(2);
+                        toastr.success('Content previews generated! Choose your favorite style.');
+                    } else {
+                        toastr.error(response.error || 'Generation failed');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#loading').fadeOut();
+                    if (status === 'timeout') {
+                        toastr.error('Request timed out. Please try again.');
+                    } else {
+                        toastr.error('An error occurred. Please try again.');
+                    }
+                }
+            });
+        });
+
+        // Render preview cards
+        function renderPreviews(previews) {
+            const grid = $('#previewGrid');
+            grid.empty();
+
+            previews.forEach((preview, index) => {
+                const slidesHtml = preview.slides.map((slide, i) => `
+                    <div class="preview-slide-item">
+                        <div class="preview-slide-title">${i + 1}. ${escapeHtml(slide.title)}</div>
+                        <div class="preview-slide-desc">${escapeHtml(slide.description)}</div>
+                    </div>
+                `).join('');
+
+                const cardHtml = `
+                    <div class="preview-card" data-variant="${preview.variant_number}">
+                        <div class="preview-card-header">
+                            <span class="preview-variant-name">${preview.variant_name}</span>
+                            <span class="preview-variant-badge">${preview.slides.length} slides</span>
+                        </div>
+                        <div class="preview-slides">
+                            ${slidesHtml}
+                        </div>
+                        <div class="preview-card-footer">
+                            <button class="select-preview-btn" data-variant="${preview.variant_number}">
+                                <i class="fas fa-check-circle"></i> Use This Style
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.append(cardHtml);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Select preview and go to Step 3
+        $(document).on('click', '.select-preview-btn', function () {
+            const variantNumber = $(this).data('variant');
+            selectedVariant = variantNumber;
+
+            // Find selected preview data
+            const selected = previewsData.find(p => p.variant_number === variantNumber);
+
+            // Update Step 3 summary
+            renderSelectedSummary(selected);
+
+            // Mark card as selected
+            $('.preview-card').removeClass('selected');
+            $(`.preview-card[data-variant="${variantNumber}"]`).addClass('selected');
+
+            goToStep(3);
+            toastr.success(`Selected: ${selected.variant_name} style`);
+        });
+
+        function renderSelectedSummary(preview) {
+            const summary = $('#selectedPreviewSummary');
+            const slidesHtml = preview.slides.slice(0, 4).map((slide, i) => `
+                <div class="summary-slide">
+                    <strong>${i + 1}. ${escapeHtml(slide.title)}</strong>
+                    <p>${escapeHtml(slide.description.substring(0, 80))}${slide.description.length > 80 ? '...' : ''}</p>
+                </div>
+            `).join('');
+
+            summary.html(`
+                <div class="summary-header">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Selected Style: ${preview.variant_name}</h3>
+                </div>
+                <div class="summary-slides">
+                    ${slidesHtml}
+                    ${preview.slides.length > 4 ? `<div class="summary-slide"><strong>+${preview.slides.length - 4} more slides...</strong></div>` : ''}
+                </div>
+            `);
+
+            $('#summarySlideCount').text(preview.slides.length);
+        }
+
+        // Back buttons
+        $('#backToStep1').click(function () {
+            goToStep(1);
+        });
+
+        $('#backToStep2').click(function () {
+            goToStep(2);
+        });
+
+        // Step 3: Create Project and Generate Images
+        // Step 3: Create Project, THEN Generate Images, THEN Redirect
+        $('#createProjectBtn').click(function () {
+            if (!sessionId || !selectedVariant) {
+                toastr.error('Please select a content style first');
+                return;
+            }
+
+            // Show loading
+            $('#loading').fadeIn();
+            $('#loading-title').text('Creating Your Carousel');
+            $('#loading-desc').text('Setting up your project...');
+            startProgressAnimation();
+
+            // Collect branding data
+            const profileImageBase64 = $('#profilePreview img').attr('src');
+            const brandLogoBase64 = $('#logoPreview img').attr('src');
+
+            const formData = {
+                session_id: sessionId,
+                variant_number: selectedVariant,
+                profile_image: profileImageBase64 || null,
+                brand_logo: brandLogoBase64 || null,
+                profile_handle: $('#profileHandle').val() || ''
+            };
+
+            $.ajax({
+                url: '/api/select-preview/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                timeout: 60000,
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: async function (response) {
+                    if (response.success) {
+                        try {
+                            const projectId = response.project_id;
+
+                            // START AUTO-GENERATION SEQUENCE
+                            $('#loading-title').text('Dreaming up your visuals...');
+                            $('#loading-desc').text('Initializing image generation...');
+
+                            await generateAllImagesForProject(projectId);
+
+                            toastr.success('Carousel created and images generated! Redirecting...');
+                            window.location.href = `/editor/${projectId}/`;
+
+                        } catch (genError) {
+                            console.error('Generation error:', genError);
+                            toastr.warning('Project created but image generation had issues.');
+                            // Still redirect to editor
+                            window.location.href = `/editor/${response.project_id}/`;
+                        }
+                    } else {
+                        $('#loading').fadeOut();
+                        toastr.error(response.error || 'Failed to create project');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#loading').fadeOut();
+                    toastr.error('An error occurred. Please try again.');
+                }
+            });
+        });
+
+        async function generateAllImagesForProject(projectId) {
+            // 1. Fetch slides to identify IDs
+            const slidesResponse = await fetch(`/api/project/${projectId}/slides/`);
+            if (!slidesResponse.ok) throw new Error('Failed to fetch slides');
+            const slidesData = await slidesResponse.json();
+
+            if (!slidesData.success || !slidesData.slides || slidesData.slides.length === 0) {
+                console.warn('No slides to generate images for');
+                return;
+            }
+
+            const slides = slidesData.slides;
+            const total = slides.length;
+            const progressBar = $('.progress'); // Reuse existing progress bar
+
+            // Stop random animation
+            if (progressInterval) clearInterval(progressInterval);
+
+            for (let i = 0; i < total; i++) {
+                const slide = slides[i];
+                const completed = i;
+                const pending = total - i;
+
+                // Update specific text as requested
+                $('#loading-desc').html(`Generating Slide ${i + 1}<br>Completed: ${completed} | Pending: ${pending}`);
+
+                // Update progress bar
+                const percent = (i / total) * 100;
+                progressBar.css('width', `${percent}%`);
+
+                try {
+                    const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+                    const prompt = slide.image_prompt || `Professional ${slide.title || 'carousel'} background`;
+
+                    const genResponse = await fetch('/api/generate-and-apply/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({
+                            description: prompt,
+                            slide_id: slide.id,
+                            platform: 'instagram'
+                        })
+                    });
+
+                    if (!genResponse.ok) {
+                        console.error(`Failed generation for slide ${slide.id}`);
+                    }
+                } catch (e) {
+                    console.error(`Error generating image for slide ${i}:`, e);
+                }
+            }
+
+            // Final state
+            progressBar.css('width', '100%');
+            $('#loading-desc').html(`All ${total} slides generated!<br>Completed: ${total} | Pending: 0`);
+            await new Promise(r => setTimeout(r, 800)); // Small pause to see completion
+        }
+
+        // Initialize platform preview
+        $('#platform').trigger('change');
+
+        // Progress animation
+        const progressBar = $('.progress');
+        let progressInterval;
+
+        function startProgressAnimation() {
+            if (progressInterval) clearInterval(progressInterval);
+            progressBar.css('width', '0%');
+
+            progressInterval = setInterval(function () {
+                if ($('#loading').is(':visible')) {
+                    let currentWidth = parseInt(progressBar.css('width'));
+                    if (isNaN(currentWidth)) currentWidth = 0;
+                    let newWidth = currentWidth + Math.random() * 15;
+                    if (newWidth > 90) newWidth = 90;
+                    progressBar.css('width', newWidth + '%');
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 500);
+        }
+    });
+</script>
+{% endblock %}

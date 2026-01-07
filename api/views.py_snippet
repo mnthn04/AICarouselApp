@@ -1,0 +1,143 @@
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def adapt_slide_content(request):
+    """Adapt slide content to a specific layout style using AI"""
+    try:
+        data = json.loads(request.body)
+        slide_id = data.get('slide_id')
+        layout_style = data.get('layout_style')
+        
+        if not slide_id or not layout_style:
+            return JsonResponse({'success': False, 'error': 'Missing slide_id or layout_style'}, status=400)
+            
+        slide = Slide.objects.get(id=slide_id)
+        project = slide.project
+        
+        # User defined prompt for adaptation
+        prompt = f"""You are a world-class presentation designer and UX copywriter.
+
+CONTEXT:
+- The user is on an EDITOR page.
+- A slide layout has already been SELECTED by the user.
+- Your job is to ADAPT the slide title and description to perfectly fit the selected layout.
+- Each layout has a unique visual personality and content structure.
+- The output will be rendered directly in the editor.
+
+IMPORTANT:
+- DO NOT change the selected layout.
+- DO NOT generate a new layout.
+- ONLY adapt content (title + description) to match the layout style.
+- Content must feel intentional and designer-crafted.
+
+INPUT:
+Topic:
+"{project.topic}"
+
+Selected Layout:
+"{layout_style}"
+
+AVAILABLE LAYOUTS & CONTENT BEHAVIOR:
+
+1. Split Screen
+- Bold headline
+- Short, confident description
+- Strong contrast between left and right
+- Ideal for value propositions
+
+2. Creative Chaos
+- Experimental headline
+- Punchy, fragmented text
+- High energy, playful tone
+- Works best with short phrases
+
+3. Corporate Pro
+- Professional, polished headline
+- Clear, business-focused description
+- Formal but modern tone
+
+4. Minimal Clean
+- Very short headline
+- Minimal description
+- Calm, elegant, whitespace-friendly
+
+5. Gradient Flow
+- Inspirational headline
+- Smooth, flowing description
+- Modern SaaS marketing tone
+
+6. Neon Glow
+- Bold, futuristic headline
+- High-impact, confident description
+- Tech / cyber / innovation tone
+
+7. Geometric Pro
+- Structured headline
+- Sharp, concise description
+- Precision and clarity
+
+8. Magazine Style
+- Editorial-style headline
+- Story-driven but short description
+- Premium, lifestyle or thought-leadership tone
+
+9. Card Layout
+- Headline broken into key ideas
+- Modular, scannable description
+- Each line should feel like a card
+
+10. Sidebar Focus
+- Strong headline
+- Supporting description aligned to sidebar narrative
+- Gamma-style storytelling
+
+TASKS:
+1. Adapt the TITLE to match the selected layout style.
+2. Adapt the DESCRIPTION to match the selected layout structure.
+3. Ensure text length fits the layout visually.
+4. Maintain clarity, impact, and visual harmony.
+
+CONTENT RULES:
+- No long paragraphs
+- Max 8–12 words per line
+- Layout determines tone and structure
+- Use power words, clarity, and rhythm
+- Less text, more meaning
+- CURRENT CONTENT TO ADAPT:
+  Title: "{slide.title}"
+  Description: "{slide.description}"
+
+Return JSON:
+{{
+  "title": "...",
+  "description": "..."
+}}"""
+
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {"role": "system", "content": "You are a specialized UX copywriter for presentation slides. Return strictly JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            response_format={"type": "json_object"}
+        )
+        
+        content = json.loads(response.choices[0].message.content)
+        
+        # Update slide
+        slide.title = content.get('title', slide.title)
+        slide.description = content.get('description', slide.description)
+        slide.save()
+        
+        return JsonResponse({
+            'success': True,
+            'title': slide.title,
+            'description': slide.description
+        })
+
+    except Slide.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Slide not found'}, status=404)
+    except Exception as e:
+        print(f"Error adapting content: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)

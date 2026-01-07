@@ -1,0 +1,249 @@
+{% extends 'api/base.html' %}
+{% load static %}
+
+{% block title %}Templates - Carousel Forge{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" role="navigation" aria-label="Main navigation">
+        <div class="sidebar-header">
+            <div class="logo-section">
+                <i class="fas fa-palette" aria-hidden="true"></i>
+                <span>Carousel Forge</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'index' %}" class="nav-item">
+                <i class="fas fa-magic" aria-hidden="true"></i>
+                <span>Generator</span>
+            </a>
+            <a href="{% url 'templates' %}" class="nav-item active" aria-current="page">
+                <i class="fas fa-th-large" aria-hidden="true"></i>
+                <span>Templates</span>
+            </a>
+            <a href="{% url 'recent' %}" class="nav-item">
+                <i class="fas fa-history" aria-hidden="true"></i>
+                <span>Recent</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="upgrade-box">
+                <div class="upgrade-icon">
+                    <i class="fas fa-crown" aria-hidden="true"></i>
+                </div>
+                <h4>Pro Features</h4>
+                <p>Unlock unlimited generations & premium templates</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" role="main">
+        <div class="content-panel">
+            <div class="panel-header">
+                <h1><i class="fas fa-th-large"></i> Ready-made Templates</h1>
+                <p>Start with a professionally designed template - AI-generated carousel backgrounds</p>
+            </div>
+
+            {% if categories %}
+            {% for category_key, category_data in categories.items %}
+            <div class="template-category" style="margin-bottom: 40px;">
+                <h2
+                    style="color: #333; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                    <span
+                        style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; margin-left: 10px;">
+                        {{ category_data.name }}
+                    </span>
+                    <span style="font-size: 0.8rem; color: #888; font-weight: normal;">
+                        ({{ category_data.templates|length }} templates)
+                    </span>
+                </h2>
+
+                <div class="templates-grid">
+                    {% for template in category_data.templates %}
+                    <div class="template-card" data-template-id="{{ template.id }}">
+                        <div class="template-preview" {% if template.preview_image %}
+                            style="background-image: url('data:image/png;base64,{{ template.preview_image }}'); background-size: cover; background-position: center;"
+                            {% else %}
+                            style="background: linear-gradient(135deg, {{ template.primary_color }} 0%, {{ template.accent_color }} 100%);"
+                            {% endif %}>
+                            <div class="template-overlay">
+                                <button class="btn-use-template" onclick="useTemplate({{ template.id }})">
+                                    <i class="fas fa-plus"></i> Use Template
+                                </button>
+                            </div>
+                            {% if template.is_premium %}
+                            <span class="premium-badge"><i class="fas fa-crown"></i></span>
+                            {% endif %}
+                        </div>
+                        <div class="template-info">
+                            <h4>{{ template.name }}</h4>
+                            <div class="template-meta">
+                                <span class="badge">{{ template.platform|title }}</span>
+                                <span class="slide-count">{{ template.slide_count }} slides</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- No templates message -->
+            <div class="no-templates" style="text-align: center; padding: 60px 20px;">
+                <i class="fas fa-images" style="font-size: 64px; color: #ddd; margin-bottom: 20px;"></i>
+                <h3 style="color: #666; margin-bottom: 10px;">No Templates Yet</h3>
+                <p style="color: #888; margin-bottom: 20px;">Templates will appear here once generated.</p>
+                <p style="color: #888; font-size: 0.9rem;">
+                    Run <code
+                        style="background: #f5f5f5; padding: 2px 8px; border-radius: 4px;">python manage.py generate_templates</code>
+                    to create templates.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<style>
+    .templates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 24px;
+    }
+
+    .template-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .template-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .template-preview {
+        height: 200px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .template-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .template-card:hover .template-overlay {
+        opacity: 1;
+    }
+
+    .btn-use-template {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform 0.2s ease;
+    }
+
+    .btn-use-template:hover {
+        transform: scale(1.05);
+    }
+
+    .premium-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+    }
+
+    .template-info {
+        padding: 16px;
+    }
+
+    .template-info h4 {
+        margin: 0 0 8px 0;
+        color: #333;
+        font-size: 1rem;
+    }
+
+    .template-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .badge {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .slide-count {
+        color: #888;
+        font-size: 0.85rem;
+    }
+</style>
+
+<script>
+    async function useTemplate(templateId) {
+        const btn = event.target.closest('.btn-use-template');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`/api/use-template/${templateId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirect to editor
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Error: ' + (data.error || 'Failed to create carousel'));
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error creating carousel from template');
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}
